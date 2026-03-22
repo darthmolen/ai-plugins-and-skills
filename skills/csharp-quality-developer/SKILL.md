@@ -1,5 +1,5 @@
 ---
-name: csharp-quality-expert
+name: csharp-quality-developer
 description: Enforce C# coding standards including StyleCop rules (SA1028, SA1518, SA1101, etc.), file formatting (CRLF, trailing whitespace), naming conventions (this. prefix, no underscore prefix), XML documentation, LoggerMessage patterns, and brace placement. Use when writing C# code, reviewing .cs files, fixing StyleCop violations, or ensuring code quality compliance.
 ---
 
