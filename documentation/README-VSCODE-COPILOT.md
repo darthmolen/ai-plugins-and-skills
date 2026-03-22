@@ -75,7 +75,8 @@ Skills activate automatically in Copilot agent mode when your prompt matches the
 
 | Skill | Activates When |
 |-------|---------------|
-| `csharp-quality-expert` | Writing or reviewing C# code |
+| `csharp-quality-developer` | Writing or reviewing C# code |
+| `cs-fix` | Build is broken, tests failing, or linting errors need resolving |
 | `codebase-mapper` | Mapping a codebase, generating architecture docs |
 | `ace-fca-workflow` | Complex multi-file tasks in large codebases |
 

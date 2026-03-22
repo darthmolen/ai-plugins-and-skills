@@ -55,7 +55,8 @@ Skills activate automatically based on context. When Claude Code detects you're 
 
 | Skill | Activates When |
 |-------|---------------|
-| `csharp-quality-expert` | Writing or reviewing C# code |
+| `csharp-quality-developer` | Writing or reviewing C# code |
+| `cs-fix` | Build is broken, tests failing, or linting errors need resolving |
 ESLint |
 | `codebase-mapper` | Mapping a codebase, generating architecture docs |
 | `ace-fca-workflow` | Complex multi-file tasks in large codebases |
@@ -68,7 +69,7 @@ ESLint |
 
 ### C# Coding Standards
 
-The `csharp-quality-expert` skill enforces:
+The `csharp-quality-developer` skill enforces:
 - StyleCop rules (SA1028, SA1518, SA1101, etc.)
 - File formatting (CRLF, trailing whitespace)
 - Naming conventions (`this.` prefix, no underscore prefix)
