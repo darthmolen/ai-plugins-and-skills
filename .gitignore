@@ -1,0 +1,6 @@
+# External research codebases (managed by research-library-load skill)
+# Use research/* (not research/) so the negation below works
+research/*
+
+# Keep the research manifest checked in
+!research/.manifest.yaml

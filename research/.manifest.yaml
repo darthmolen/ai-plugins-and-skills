@@ -1,0 +1,14 @@
+# Research Library Manifest
+# Lists external repositories to clone into research/ for reference.
+# The SessionStart hook reads this file and restores any missing repos.
+#
+# Format:
+#   repos:
+#     - name: <directory-name-under-research/>
+#       url: <git-clone-url>
+#       ref: <branch-or-tag-or-commit>  # optional, defaults to HEAD
+#       sparse:                          # optional, for large repos
+#         - path/to/include
+#         - another/path
+
+repos: []
