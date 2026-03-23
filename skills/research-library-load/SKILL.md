@@ -95,3 +95,11 @@ A `SessionStart` hook runs `scripts/restore-research.sh` which:
 4. Prints a status summary into the session context
 
 This means research repos survive teleport, Claude Code web sessions, and fresh environment setups automatically.
+
+### Windows (PowerShell) Support
+
+A PowerShell equivalent is available at `scripts/restore-research.ps1`. The default hook uses `bash`, which is available on most platforms (including Windows via Git Bash). For pure-PowerShell environments, update the hook command in `.claude/settings.json`:
+
+```json
+"command": "pwsh -NoProfile -File skills/research-library-load/scripts/restore-research.ps1"
+```
