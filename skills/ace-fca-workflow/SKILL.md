@@ -1,8 +1,10 @@
 ---
 name: ace-fca-workflow
 description: Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks. Use this skill when working on brownfield codebases, large repos (100k+ LOC), complex bugs, multi-file refactors, or features requiring deep codebase understanding. Triggers include requests to fix bugs in unfamiliar code, implement features in large codebases, understand complex code flows, or when the user mentions "research plan implement", "ACE-FCA", or "frequent compaction". This workflow prevents context window exhaustion and produces high-quality, reviewable artifacts.
+metadata:
+  category: tools
+  order: 2
 ---
-
 # ACE-FCA Workflow
 
 Frequent Intentional Compaction (FIC) is a context engineering approach for coding agents that maintains context utilization at 40-60% by splitting work into discrete, compacted phases.

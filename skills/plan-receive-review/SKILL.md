@@ -1,8 +1,10 @@
 ---
 name: plan-receive-review
 description: Use when a plan you authored has been reviewed and is waiting in planning/needs-review/reviewed/ - retrieves reviewed plan, evaluates each review point with technical rigor, and presents findings with recommended actions
+metadata:
+  category: review-helpers
+  order: 12
 ---
-
 # Receive Plan Review
 
 Pick up a reviewed plan, evaluate each review point against the actual plan content, and present findings to the user with recommended actions.

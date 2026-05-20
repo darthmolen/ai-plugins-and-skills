@@ -1,8 +1,9 @@
 ---
 name: python-quality-install
 description: Use when initializing a new Python project or adding quality tooling to an existing one - sets up ruff linter and formatter, pyright type checker, and pre-commit hooks with opinionated defaults that enforce python-quality-developer standards
+metadata:
+  category: language-helpers
 ---
-
 # Python Quality Install
 
 Set up ruff, pyright, and pre-commit in a Python project. Run as `/python-quality-install`.

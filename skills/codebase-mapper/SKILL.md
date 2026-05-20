@@ -2,8 +2,10 @@
 name: codebase-mapper
 description: "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Outputs a token-efficient structure section for CLAUDE.md. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project."
 allowed-tools: Read Write Edit Bash Glob Grep
+metadata:
+  category: tools
+  order: 1
 ---
-
 # Codebase Structure Mapper
 
 Deterministically parse Python, C#, and TypeScript codebases to extract structural maps (namespaces, classes, methods, inheritance, dependencies) and output a concise, token-efficient architecture section for CLAUDE.md.

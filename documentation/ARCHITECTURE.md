@@ -47,57 +47,54 @@ Skills are platform-agnostic. Any tool implementing the Agent Skills specificati
 
 ```
 ai-plugins-and-skills/
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ .claude-plugin/
-Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ marketplace.json          # Claude Code marketplace
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ .github/
-Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ plugin/
-Ã¢â€â€š       Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ marketplace.json      # Copilot CLI marketplace
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ README.md
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ index.json                    # Auto-generated plugin index
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ scripts/
-Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ build-plugin.ps1          # Cross-platform build
-Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ validate-skills.ps1       # Agent Skills spec validator
-Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ generate-index.ps1        # Legacy (calls build-plugin)
-Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ claude-code/
-    Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ plugins/
-        Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ ai-plugins-and-skills-config-sync/
-        Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ plugin.yaml               # Source of truth
-        Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ .claude-plugin/
-        Ã¢â€â€š   Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ plugin.json            # Generated
-        Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ commands/
-        Ã¢â€â€š   Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ config-sync.md
-        Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ skills/
-        Ã¢â€â€š       Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ config-sync/
-        Ã¢â€â€š           Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-        Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ ai-plugins-and-skills/
-            Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ plugin.yaml               # Source of truth
-            Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ .claude-plugin/
-            Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ plugin.json            # Generated
-            Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ commands/
-            Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ ai-plugins-and-skills-init.md
-            Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ skills/
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ ace-fca-workflow/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ angular-architect/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ angular-expert/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ azure-infra-engineer/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ codebase-mapper/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ ai-plugins-and-skills-init/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ csharp-quality-expert/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ python-pro/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ react-specialist/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ sql-pro/
-                Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
-                Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ typescript-pro/
-                    Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ SKILL.md
+├── LICENSE
+├── README.md                     # Auto-generated skills table
+├── index.json                    # Auto-generated skill index
+├── documentation/
+│   ├── ARCHITECTURE.md           # Auto-generated directory tree
+│   ├── HOW-TO-DEV.md
+│   ├── README-CLAUDECODE.md
+│   ├── README-COPILOT-CLI.md
+│   └── README-VSCODE-COPILOT.md
+├── scripts/
+│   ├── build_index.py            # Manual + pre-commit entry point
+│   └── git-hooks/
+│       └── pre-commit            # Runs build_index.py
+└── skills/
+    ├── csharp-quality-developer/
+    │   └── SKILL.md
+    ├── python-quality-developer/
+    │   └── SKILL.md
+    ├── python-quality-install/
+    │   └── SKILL.md
+    ├── plan-send-review/
+    │   └── SKILL.md
+    ├── plan-intake-review/
+    │   └── SKILL.md
+    ├── plan-receive-review/
+    │   └── SKILL.md
+    ├── code-send-review/
+    │   └── SKILL.md
+    ├── code-intake-review/
+    │   └── SKILL.md
+    ├── code-review-apply/
+    │   └── SKILL.md
+    ├── code-review-plan-create/
+    │   └── SKILL.md
+    ├── code-review-seed-slices/
+    │   └── SKILL.md
+    ├── code-review-plan-execute/
+    │   └── SKILL.md
+    ├── code-synthesize-reviews/
+    │   └── SKILL.md
+    ├── codebase-mapper/
+    │   └── SKILL.md
+    ├── ace-fca-workflow/
+    │   └── SKILL.md
+    ├── azure-servicebus-operations/
+    │   └── SKILL.md
+    └── sql-query/
+        └── SKILL.md
 ```
 
 ## Known Limitations

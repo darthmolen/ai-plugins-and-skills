@@ -1,8 +1,9 @@
 ---
 name: python-quality-developer
 description: Enforce Python coding standards including ruff rules, pyright type safety, avoiding Any, consistent return types, proper HTTP error signaling, exception chaining, async-first patterns, typed dicts for structured data, and parameter ordering. Use when writing Python code, reviewing .py files, fixing linter violations, or ensuring code quality compliance.
+metadata:
+  category: language-helpers
 ---
-
 # Python Quality Standards
 
 ## Pre-Coding Checklist

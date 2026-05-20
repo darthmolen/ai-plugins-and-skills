@@ -1,8 +1,10 @@
 ---
 name: plan-send-review
 description: Use when you have authored a plan and want the other AI agent (Claude or Copilot) to review it - copies the active plan to planning/needs-review/ for adversarial review
+metadata:
+  category: review-helpers
+  order: 10
 ---
-
 # Send Plan for Review
 
 Copy the active session's plan file to the project's review queue so the other AI agent can review it.
