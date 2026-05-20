@@ -1,0 +1,124 @@
+{
+  "generated": "2026-05-20T19:59:04Z",
+  "skills": [
+    {
+      "name": "csharp-quality-developer",
+      "folder": "csharp-quality-developer",
+      "description": "Enforce C# coding standards including StyleCop rules (SA1028, SA1518, SA1101, etc.), file formatting (CRLF, trailing whitespace), naming conventions (this. prefix, no underscore prefix), XML documentation, LoggerMessage patterns, and brace placement. Use when writing C# code, reviewing .cs files, fixing StyleCop violations, or ensuring code quality compliance.",
+      "category": "language-helpers",
+      "order": null
+    },
+    {
+      "name": "python-quality-developer",
+      "folder": "python-quality-developer",
+      "description": "Enforce Python coding standards including ruff rules, pyright type safety, avoiding Any, consistent return types, proper HTTP error signaling, exception chaining, async-first patterns, typed dicts for structured data, and parameter ordering. Use when writing Python code, reviewing .py files, fixing linter violations, or ensuring code quality compliance.",
+      "category": "language-helpers",
+      "order": null
+    },
+    {
+      "name": "python-quality-install",
+      "folder": "python-quality-install",
+      "description": "Use when initializing a new Python project or adding quality tooling to an existing one - sets up ruff linter and formatter, pyright type checker, and pre-commit hooks with opinionated defaults that enforce python-quality-developer standards",
+      "category": "language-helpers",
+      "order": null
+    },
+    {
+      "name": "plan-send-review",
+      "folder": "plan-send-review",
+      "description": "Use when you have authored a plan and want the other AI agent (Claude or Copilot) to review it - copies the active plan to planning/needs-review/ for adversarial review",
+      "category": "review-helpers",
+      "order": 10
+    },
+    {
+      "name": "plan-intake-review",
+      "folder": "plan-intake-review",
+      "description": "Use on a loop interval to check for plans awaiting review in planning/needs-review/, move to in-progress, dispatch plan-reviewer subagent, append feedback, and move to reviewed/ - silent when no files found",
+      "category": "review-helpers",
+      "order": 11
+    },
+    {
+      "name": "plan-receive-review",
+      "folder": "plan-receive-review",
+      "description": "Use when a plan you authored has been reviewed and is waiting in planning/needs-review/reviewed/ - retrieves reviewed plan, evaluates each review point with technical rigor, and presents findings with recommended actions",
+      "category": "review-helpers",
+      "order": 12
+    },
+    {
+      "name": "code-send-review",
+      "folder": "code-send-review",
+      "description": "Use when queueing a slice of a branch for code review \u2014 builds a slice spec from a commit range, focus areas, and plan-doc refs, and drops it in planning/code-reviews/needs-review/ for the intake loop to pick up",
+      "category": "review-helpers",
+      "order": 20
+    },
+    {
+      "name": "code-intake-review",
+      "folder": "code-intake-review",
+      "description": "Use on a loop interval to check for code slices awaiting review in planning/code-reviews/needs-review/, move to in-progress, dispatch code-reviewer subagent, append findings, and move to reviewed/ - silent when no files found",
+      "category": "review-helpers",
+      "order": 21
+    },
+    {
+      "name": "code-review-apply",
+      "folder": "code-review-apply",
+      "description": "Use when reviewed code-review slices are ready for triage and the developer wants to walk findings, classify them accept/merge/reject/flag, and apply accepted changes to code \u2014 third punch-in command of the code review workflow, after code-review-plan-execute completes",
+      "category": "review-helpers",
+      "order": 22
+    },
+    {
+      "name": "code-review-plan-create",
+      "folder": "code-review-plan-create",
+      "description": "Use when ready to plan a code review of a development branch \u2014 walks the branch, discovers existing plan documents, maps commits to plans, Q&As unmapped commits with the user, and writes a meta-plan with a slice table at planning/YYYY-MM-DD-code-review-plan-<slug>.md",
+      "category": "review-helpers",
+      "order": 30
+    },
+    {
+      "name": "code-review-seed-slices",
+      "folder": "code-review-seed-slices",
+      "description": "Use when a code-review meta-plan is finalized and you need to fan it out into one slice spec per row in the meta-plan's slice table \u2014 produces N files in planning/code-reviews/needs-review/ ready for code-intake-review to drain",
+      "category": "review-helpers",
+      "order": 31
+    },
+    {
+      "name": "code-review-plan-execute",
+      "folder": "code-review-plan-execute",
+      "description": "Use when a code-review meta-plan is ready and you want to drive the full review pipeline \u2014 pre-flight, seed slices, dispatch reviewers per slice, synthesize findings, and notify on completion; defensive and idempotent so repeated runs resume from where the last run stopped",
+      "category": "review-helpers",
+      "order": 32
+    },
+    {
+      "name": "code-synthesize-reviews",
+      "folder": "code-synthesize-reviews",
+      "description": "Use when multiple code-review slices have been reviewed and you need a consolidated pre-merge action list \u2014 reads all slice specs in reviewed/ and completed/, filters findings by Status at HEAD: open, groups by severity and file, emits planning/code-reviews/SYNTHESIS-<slug>.md",
+      "category": "review-helpers",
+      "order": 33
+    },
+    {
+      "name": "codebase-mapper",
+      "folder": "codebase-mapper",
+      "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Outputs a token-efficient structure section for CLAUDE.md. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
+      "category": "tools",
+      "order": 1
+    },
+    {
+      "name": "ace-fca-workflow",
+      "folder": "ace-fca-workflow",
+      "description": "Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks. Use this skill when working on brownfield codebases, large repos (100k+ LOC), complex bugs, multi-file refactors, or features requiring deep codebase understanding. Triggers include requests to fix bugs in unfamiliar code, implement features in large codebases, understand complex code flows, or when the user mentions \"research plan implement\", \"ACE-FCA\", or \"frequent compaction\". This workflow prevents context window exhaustion and produces high-quality, reviewable artifacts.",
+      "category": "tools",
+      "order": 2
+    },
+    {
+      "name": "azure-servicebus-operations",
+      "folder": "azure-servicebus-operations",
+      "description": "Use when peeking, draining, snapshotting metrics on, enumerating, or otherwise inspecting/manipulating Azure Service Bus subscriptions, queues, or dead-letter sub-queues \u2014 including diagnosing DLQ accumulation, capturing parked messages for forensics before discard, draining stuck alert backlogs, comparing active/dlq counts across multiple subs, enumerating an entire namespace's topology, or clearing a subscription's ForwardTo (which the az CLI cannot do).",
+      "category": "tools",
+      "order": null
+    },
+    {
+      "name": "sql-query",
+      "folder": "sql-query",
+      "description": "Use when running ad-hoc read-only T-SQL against Azure SQL \u2014 exploring Query Store, sampling tables, inspecting DMVs, joining sys.* views, or producing JSON/CSV for an alerting pipeline. Read-only by construction (AST-validated, rolled-back transaction, no INSERT/UPDATE/DELETE/EXEC/OPENROWSET). Returns TOON by default for token-efficient consumption by Claude; --format=json|table|csv for other consumers.",
+      "category": "tools",
+      "order": null
+    }
+  ]
+}

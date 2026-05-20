@@ -1,8 +1,10 @@
 ---
 name: plan-intake-review
 description: Use on a loop interval to check for plans awaiting review in planning/needs-review/, move to in-progress, dispatch plan-reviewer subagent, append feedback, and move to reviewed/ - silent when no files found
+metadata:
+  category: review-helpers
+  order: 11
 ---
-
 # Plan Review Intake
 
 Poll the review queue, pick up plans, review them with a subagent, and deposit reviewed plans with feedback appended.
