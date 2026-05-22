@@ -2,7 +2,7 @@
 
 An AI-in-the-loop, human-in-the-loop adversarial review pipeline for plans and specs. You author the plan in your primary session, hand it off to a second agent (or a second session of the same agent) for adversarial critique, then come back to the original session to walk findings with the author agent + you. The human stays in the loop at every gate: you decide what to accept, merge, or reject before any code is written.
 
-> **Working draft.** Co-located with the [code review workflow](CODE-REVIEW-WORKFLOW.md). The two pipelines share the same shape (file-system kanban, idempotent skills, multi-agent fan-out) and the same end-state: a spec or branch the human is genuinely confident in.
+Pairs with the [code review workflow](CODE-REVIEW-WORKFLOW.md). The two pipelines share the same shape (file-system kanban, idempotent skills, multi-agent fan-out) and the same end-state: a spec or branch the human is genuinely confident in.
 
 ---
 

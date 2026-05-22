@@ -12,6 +12,8 @@ Cross-platform AI coding assistant skills following the [Agent Skills](https://a
 
 ## Skills
 
+Skills are situational knowledge files an AI coding harness loads when their description matches what you're doing — repeatable processes, agent-callable tools, or domain knowledge. See [skills/README.md](skills/README.md) for the longer intro and per-harness install guides.
+
 ### Review Helpers
 
 <!-- write category flavor text here; the table below is auto-generated -->
@@ -22,7 +24,7 @@ For planning: run [plan-send-review](skills/plan-send-review/) in your authoring
 
 For code commits, pick a path: one large ad-hoc review with [code-send-review](skills/code-send-review/), or slice-and-dice a branch into multiple slices with [code-review-plan-create](skills/code-review-plan-create/) that will then get reviewed in parallel and rolled into a single pre-merge action list via [code-synthesize-reviews](skills/code-synthesize-reviews/).
 
-See [CODE-REVIEW-WORKFLOW.md](skills/CODE-REVIEW-WORKFLOW.md) for the full state machine and directory layout.
+See [documentation/workflows/](documentation/workflows/README.md) for the full plan-review and code-review workflows — state machines, directory layouts, and the spec-driven coding workflow that ties them together.
 
 <!-- SKILLS: review-helpers -->
 | Skill | Description |
