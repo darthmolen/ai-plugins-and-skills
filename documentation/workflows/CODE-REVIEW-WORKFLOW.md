@@ -2,6 +2,8 @@
 
 A file-system-driven, idempotent, multi-agent code review pipeline. Slice specs live in `planning/code-reviews/needs-review/` and move through kanban directories as they're processed. Status field + directory location encode where every slice is at all times.
 
+Pairs with the [Plan Review Workflow](PLAN-REVIEW-WORKFLOW.md) — plan review verifies the spec before you write code; this verifies the code matches the spec and is itself well-formed.
+
 > **Working draft.** This README is co-located with the skills until the workflow moves to its own repo. Once that move happens, treat this file as a starting point for the repo's `README.md`.
 
 ---
