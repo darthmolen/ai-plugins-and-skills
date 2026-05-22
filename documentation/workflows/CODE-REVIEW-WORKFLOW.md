@@ -4,8 +4,6 @@ A file-system-driven, idempotent, multi-agent code review pipeline. Slice specs 
 
 Pairs with the [Plan Review Workflow](PLAN-REVIEW-WORKFLOW.md) — plan review verifies the spec before you write code; this verifies the code matches the spec and is itself well-formed.
 
-> **Working draft.** This README is co-located with the skills until the workflow moves to its own repo. Once that move happens, treat this file as a starting point for the repo's `README.md`.
-
 ---
 
 ## Two paths in, one path out
@@ -229,9 +227,7 @@ The legacy filename form (no `<initiative>` segment) is honored on read — old 
 
 ## Future work
 
-When this README graduates to a real repo:
-
 - Add a top-level architecture diagram (state machine + directory transitions).
-- Document the `code-reviewer` subagent template that lives at `code-intake-review/code-reviewer.md` — it's how findings get the `Status at HEAD` field.
+- Document the `code-reviewer` subagent template at [../../skills/code-intake-review/code-reviewer.md](../../skills/code-intake-review/code-reviewer.md) — it's how findings get the `Status at HEAD` field.
 - Document `parent_plan` resolution between source-vs-audit copies (relevant when `plan-receive-review` has been used on the meta-plan).
 - Consider promoting `<initiative>` from a filename segment to a real subdirectory layout (`planning/code-reviews/<initiative>/{needs-review,in-progress,...}`). The frontmatter field carries enough info to migrate cleanly when the queue volume justifies it.
