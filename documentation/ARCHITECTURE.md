@@ -50,6 +50,9 @@ ai-plugins-and-skills/
 ├── LICENSE
 ├── README.md                     # Auto-generated skills table
 ├── index.json                    # Auto-generated skill index
+├── .claude-plugin/
+│   ├── plugin.json               # Claude Code plugin manifest
+│   └── marketplace.json          # Claude Code marketplace manifest
 ├── documentation/
 │   ├── ARCHITECTURE.md           # Auto-generated directory tree
 │   ├── HOW-TO-DEV.md
@@ -58,6 +61,9 @@ ai-plugins-and-skills/
 │   └── README-VSCODE-COPILOT.md
 ├── scripts/
 │   ├── build_index.py            # Manual + pre-commit entry point
+│   ├── claude-code/
+│   │   ├── install.cmd           # Windows installer
+│   │   └── install.sh            # Unix/macOS installer
 │   └── git-hooks/
 │       └── pre-commit            # Runs build_index.py
 └── skills/

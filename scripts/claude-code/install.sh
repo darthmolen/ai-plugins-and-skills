@@ -18,9 +18,5 @@ echo "Installing ai-plugins-and-skills plugin..."
 claude plugin install ai-plugins-and-skills@ai-plugins-and-skills-ai-standards
 
 echo ""
-echo "Installing ai-plugins-and-skills-config-sync plugin..."
-claude plugin install ai-plugins-and-skills-config-sync@ai-plugins-and-skills-ai-standards
-
-echo ""
 echo "=== Installation Complete ==="
-echo "Restart Claude Code to activate plugins."
+echo "Restart Claude Code to activate the plugin."

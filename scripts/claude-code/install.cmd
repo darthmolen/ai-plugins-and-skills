@@ -20,16 +20,11 @@ echo Installing ai-plugins-and-skills plugin...
 call claude plugin install ai-plugins-and-skills@ai-plugins-and-skills-ai-standards
 if errorlevel 1 goto :error
 
-echo.
-echo Installing ai-plugins-and-skills-config-sync plugin...
-call claude plugin install ai-plugins-and-skills-config-sync@ai-plugins-and-skills-ai-standards
-if errorlevel 1 goto :error
-
 popd
 
 echo.
 echo === Installation Complete ===
-echo Restart Claude Code to activate plugins.
+echo Restart Claude Code to activate the plugin.
 goto :end
 
 :error
