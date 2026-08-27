@@ -115,7 +115,3 @@ SendAlertCommand cleanup pre-relaunch:
 2. `sb-peek --write-messages=true 200` → captured 87 alerts to disk for forensics; sorted disk files by filename to find the most-recent.
 3. `sb-drain --confirm=true --max=200` → destructively cleared the sub.
 4. `sb-metrics` again → confirmed `active=0, dlq=0` before re-enabling the consumer in the next deploy.
-
-## Cross-references
-- `CSAT.IT.Messaging/docs/2-a-service-bus-dead-letter.md` — DLQ mechanism + triage.
-- `CSAT.IT.Messaging/docs/6-distribute-routing.md` — topology + DisabledRoutes behaviour.
