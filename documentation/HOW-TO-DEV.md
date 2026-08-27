@@ -18,7 +18,7 @@ git config core.hooksPath scripts/git-hooks
 
 ## Development Workflow
 
-1. Create or edit a `SKILL.md` under `skills/<skill-name>/`
+1. Create or edit a `SKILL.md` under `skills/<skill-name>/` (or under `plugins/<plugin>/skills/<skill-name>/` for an opt-in plugin -- see [Multiple plugins](#multiple-plugins))
 2. Run `python3 scripts/build_index.py` to validate and regenerate `index.json`, the README skills table, and the ARCHITECTURE directory tree
 3. Commit -- the pre-commit hook re-runs the script and re-stages the regenerated files if any `SKILL.md` changed
 
@@ -45,8 +45,8 @@ The `name` must match the directory name. The `description` determines when AI a
 
 ### Scripts
 
-- **`scripts/build_index.py`** — validates every `SKILL.md` against the Agent Skills spec and regenerates `index.json`, the README skills table, and the ARCHITECTURE directory tree. Exits 1 on validation failure.
-- **`scripts/git-hooks/pre-commit`** — runs `build_index.py` when a staged change touches `skills/*/SKILL.md` or `scripts/build_index.py`, then re-stages the regenerated artifacts. Activated per clone via `git config core.hooksPath scripts/git-hooks` (see [One-time setup](#one-time-setup)).
+- **`scripts/build_index.py`** — validates every `SKILL.md` against the Agent Skills spec and regenerates `index.json`, the README skills table, and the ARCHITECTURE directory tree. Scans every root listed in its `PLUGIN_ROOTS` constant, and rejects a skill name used by more than one plugin. Exits 1 on validation failure.
+- **`scripts/git-hooks/pre-commit`** — runs `build_index.py` when a staged change touches `skills/*/SKILL.md`, `plugins/*/skills/*/SKILL.md`, or `scripts/build_index.py`, then re-stages the regenerated artifacts. Activated per clone via `git config core.hooksPath scripts/git-hooks` (see [One-time setup](#one-time-setup)).
 
 ### Generated files
 
@@ -59,10 +59,32 @@ Do not edit these directly — they are rewritten on every run:
 ## Adding a New Skill
 
 1. Create a directory: `skills/<skill-name>/`
-2. Create `SKILL.md` with the required frontmatter (`name`, `description`)
-3. Run `python3 scripts/build_index.py`
-4. Verify the skill appears in `index.json` and the README skills table
-5. Commit -- the hook will re-run the build if you forgot step 3
+2. Create `SKILL.md` with the required frontmatter (`name`, `description`, and `metadata.category`)
+3. Make sure the README has a `<!-- SKILLS: <category> -->` / `<!-- END SKILLS: <category> -->` block for that category -- the build fails on a category with no block
+4. Run `python3 scripts/build_index.py`
+5. Verify the skill appears in `index.json` and the README skills table
+6. Commit -- the hook will re-run the build if you forgot step 4
+
+## Multiple plugins
+
+This repo publishes more than one plugin from a single marketplace:
+
+| Plugin | Skills live in | Installed |
+|---|---|---|
+| `ai-plugins-and-skills` | `skills/` | Default |
+| `curriculum` | `plugins/curriculum/skills/` | Opt-in |
+
+Every installed skill's `description` sits in the model's context for the whole session whether it
+fires or not. A skill family that is inert without a specific workspace should not charge that cost
+to everyone, so it ships as its own plugin instead.
+
+To add another opt-in plugin:
+
+1. Create `plugins/<name>/.claude-plugin/plugin.json` and `plugins/<name>/skills/`
+2. Add an entry to `.claude-plugin/marketplace.json` with `"source": "./plugins/<name>"`
+3. Add `("<name>", REPO / "plugins" / "<name>" / "skills")` to `PLUGIN_ROOTS` in `scripts/build_index.py`
+4. Give its skills their own `metadata.category` and add the matching README block
+5. Run `claude plugin validate ./plugins/<name>` and `claude plugin validate .`
 
 ## VS Code Copilot Skill Discovery
 

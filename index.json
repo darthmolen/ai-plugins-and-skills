@@ -1,9 +1,146 @@
 {
-  "generated": "2026-07-27T10:26:38Z",
+  "generated": "2026-08-27T01:46:35Z",
   "skills": [
+    {
+      "name": "curriculum-classify",
+      "folder": "curriculum-classify",
+      "path": "plugins/curriculum/skills/curriculum-classify",
+      "plugin": "curriculum",
+      "description": "Use when sorting a curriculum source manifest into content domains and teachability \u2014 deciding which discovered files are eligible instructional source and what kind of content each holds. Second stage of the curriculum pipeline, after curriculum-discover.",
+      "category": "curriculum",
+      "order": null
+    },
+    {
+      "name": "curriculum-design",
+      "folder": "curriculum-design",
+      "path": "plugins/curriculum/skills/curriculum-design",
+      "plugin": "curriculum",
+      "description": "Use when turning extracted learning units into course definitions \u2014 deciding course boundaries, level, prerequisites, modules, labs, and assessments, and writing course.yaml. Fourth stage of the curriculum pipeline, after curriculum-extract.",
+      "category": "curriculum",
+      "order": null
+    },
+    {
+      "name": "curriculum-discover",
+      "folder": "curriculum-discover",
+      "path": "plugins/curriculum/skills/curriculum-discover",
+      "plugin": "curriculum",
+      "description": "Use when building a source manifest for curriculum generation \u2014 enumerating eligible files in a repository or wiki at a pinned revision, with hashes and change types. First stage of the curriculum pipeline. Triggers on \"what source content exists for\", \"discover curriculum sources\", or as step 1 of curriculum-orchestrate.",
+      "category": "curriculum",
+      "order": null
+    },
+    {
+      "name": "curriculum-extract",
+      "folder": "curriculum-extract",
+      "path": "plugins/curriculum/skills/curriculum-extract",
+      "plugin": "curriculum",
+      "description": "Use when converting classified curriculum sources into traceable learning units \u2014 concepts, outcomes, procedures, constraints, failure modes, labs, and prerequisites, each tied to source evidence. Third stage of the curriculum pipeline, after curriculum-classify.",
+      "category": "curriculum",
+      "order": null
+    },
+    {
+      "name": "curriculum-generate",
+      "folder": "curriculum-generate",
+      "path": "plugins/curriculum/skills/curriculum-generate",
+      "plugin": "curriculum",
+      "description": "Use when rendering approved course definitions into artifacts \u2014 student guide, instructor guide, labs, and quiz \u2014 with provenance metadata. Fifth stage of the curriculum pipeline, after curriculum-govern approves the definition. Slide generation is not implemented.",
+      "category": "curriculum",
+      "order": null
+    },
+    {
+      "name": "curriculum-govern",
+      "folder": "curriculum-govern",
+      "path": "plugins/curriculum/skills/curriculum-govern",
+      "plugin": "curriculum",
+      "description": "Use when validating curriculum before generation or publication \u2014 schema, source fidelity, provenance, contradictions, sensitive data, prerequisite integrity, and artifact hashes. Returns approved, approved_with_warnings, or rejected. Runs twice in a generate cycle: once on the course definition, once on the rendered artifacts.",
+      "category": "curriculum",
+      "order": null
+    },
+    {
+      "name": "curriculum-orchestrate",
+      "folder": "curriculum-orchestrate",
+      "path": "plugins/curriculum/skills/curriculum-orchestrate",
+      "plugin": "curriculum",
+      "description": "Use when generating or refreshing course curriculum from source repositories \u2014 turning documentation into course definitions and course artifacts. Sequences discovery, classification, learning extraction, curriculum design, governance, and artifact generation, and stops at a failed gate. Triggers on \"regenerate the course\", \"build curriculum from\", \"what courses does this change affect\", or after a documentation change that a course sources from.",
+      "category": "curriculum",
+      "order": null
+    },
+    {
+      "name": "angular-architect",
+      "folder": "angular-architect",
+      "path": "skills/angular-architect",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Expert Angular architect mastering Angular 20+ with enterprise patterns. Specializes in signals, RxJS, NgRx state management, micro-frontend architecture, and performance optimization with focus on building scalable enterprise applications.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "angular-expert",
+      "folder": "angular-expert",
+      "path": "skills/angular-expert",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Angular 20+/TypeScript frontend expert. PROACTIVELY use when working with Angular components, signals, RxJS, NgRx, angular.json configuration, or ng serve issues.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "azure-infra-engineer",
+      "folder": "azure-infra-engineer",
+      "path": "skills/azure-infra-engineer",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Azure cloud infrastructure expert specializing in network design, identity integration, PowerShell automation with Az modules, and infrastructure-as-code patterns using Bicep.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "dotnet-secrets",
+      "folder": "dotnet-secrets",
+      "path": "skills/dotnet-secrets",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Secrets hygiene for .NET development. Use when handling credentials, connection strings, API keys, or any secret value \u2014 especially when setting up local dev environments, configuring user-secrets, or bootstrapping Azure App Configuration + Key Vault access. Activates on any prompt mentioning secrets, credentials, connection strings, user-secrets, AZURE_CLIENT_SECRET, AZURE_CLIENT_ID, or AppConfig connection strings.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "python-pro",
+      "folder": "python-pro",
+      "path": "skills/python-pro",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Python backend expert. PROACTIVELY use when working with Django, FastAPI, Flask, Pydantic, SQLAlchemy, or async Python APIs. Covers backend patterns, data validation, and ORM best practices.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "react-specialist",
+      "folder": "react-specialist",
+      "path": "skills/react-specialist",
+      "plugin": "ai-plugins-and-skills",
+      "description": "React best practices expert. PROACTIVELY use when working with React components, JSX, hooks (useState, useEffect), state management, or component architecture and performance optimization.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "sql-pro",
+      "folder": "sql-pro",
+      "path": "skills/sql-pro",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Expert SQL developer specializing in complex query optimization, database design, and performance tuning across PostgreSQL, MySQL, SQL Server, and Oracle. Masters advanced SQL features, indexing strategies, and data warehousing patterns.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "typescript-pro",
+      "folder": "typescript-pro",
+      "path": "skills/typescript-pro",
+      "plugin": "ai-plugins-and-skills",
+      "description": "TypeScript best practices expert. PROACTIVELY use when working with TypeScript/JavaScript files (.ts, .tsx, .js, .jsx), type errors, ESLint issues, or strict mode configuration. Covers patterns, ESLint best practices, and strict type handling.",
+      "category": "domain-skills",
+      "order": null
+    },
     {
       "name": "csharp-quality-developer",
       "folder": "csharp-quality-developer",
+      "path": "skills/csharp-quality-developer",
+      "plugin": "ai-plugins-and-skills",
       "description": "Enforce C# coding standards including StyleCop rules (SA1028, SA1518, SA1101, etc.), file formatting (CRLF, trailing whitespace), naming conventions (this. prefix, no underscore prefix), XML documentation, LoggerMessage patterns, and brace placement. Use when writing C# code, reviewing .cs files, fixing StyleCop violations, or ensuring code quality compliance.",
       "category": "language-helpers",
       "order": null
@@ -11,6 +148,8 @@
     {
       "name": "python-quality-developer",
       "folder": "python-quality-developer",
+      "path": "skills/python-quality-developer",
+      "plugin": "ai-plugins-and-skills",
       "description": "Enforce Python coding standards including ruff rules, pyright type safety, avoiding Any, consistent return types, proper HTTP error signaling, exception chaining, async-first patterns, typed dicts for structured data, and parameter ordering. Use when writing Python code, reviewing .py files, fixing linter violations, or ensuring code quality compliance.",
       "category": "language-helpers",
       "order": null
@@ -18,6 +157,8 @@
     {
       "name": "python-quality-install",
       "folder": "python-quality-install",
+      "path": "skills/python-quality-install",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when initializing a new Python project or adding quality tooling to an existing one - sets up ruff linter and formatter, pyright type checker, and pre-commit hooks with opinionated defaults that enforce python-quality-developer standards",
       "category": "language-helpers",
       "order": null
@@ -25,6 +166,8 @@
     {
       "name": "plan-send-review",
       "folder": "plan-send-review",
+      "path": "skills/plan-send-review",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when you have authored a plan and want the other AI agent (Claude or Copilot) to review it - copies the active plan to planning/needs-review/ for adversarial review",
       "category": "review-helpers",
       "order": 10
@@ -32,6 +175,8 @@
     {
       "name": "plan-intake-review",
       "folder": "plan-intake-review",
+      "path": "skills/plan-intake-review",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use on a loop interval to check for plans awaiting review in planning/needs-review/, move to in-progress, dispatch plan-reviewer subagent, append feedback, and move to reviewed/ - silent when no files found",
       "category": "review-helpers",
       "order": 11
@@ -39,6 +184,8 @@
     {
       "name": "plan-receive-review",
       "folder": "plan-receive-review",
+      "path": "skills/plan-receive-review",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when a plan you authored has been reviewed and is waiting in planning/needs-review/reviewed/ - retrieves reviewed plan, evaluates each review point with technical rigor, and presents findings with recommended actions",
       "category": "review-helpers",
       "order": 12
@@ -46,6 +193,8 @@
     {
       "name": "code-send-review",
       "folder": "code-send-review",
+      "path": "skills/code-send-review",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when queueing a slice of a branch for code review \u2014 builds a slice spec from a commit range, focus areas, and plan-doc refs, and drops it in planning/code-reviews/needs-review/ for the intake loop to pick up",
       "category": "review-helpers",
       "order": 20
@@ -53,6 +202,8 @@
     {
       "name": "code-intake-review",
       "folder": "code-intake-review",
+      "path": "skills/code-intake-review",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use on a loop interval to check for code slices awaiting review in planning/code-reviews/needs-review/, move to in-progress, dispatch code-reviewer subagent, append findings, and move to reviewed/ - silent when no files found",
       "category": "review-helpers",
       "order": 21
@@ -60,6 +211,8 @@
     {
       "name": "code-review-apply",
       "folder": "code-review-apply",
+      "path": "skills/code-review-apply",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when reviewed code-review slices are ready for triage and the developer wants to walk findings, classify them accept/merge/reject/flag, and apply accepted changes to code \u2014 third punch-in command of the code review workflow, after code-review-plan-execute completes",
       "category": "review-helpers",
       "order": 22
@@ -67,6 +220,8 @@
     {
       "name": "code-review-plan-create",
       "folder": "code-review-plan-create",
+      "path": "skills/code-review-plan-create",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when ready to plan a code review of a development branch \u2014 walks the branch, discovers existing plan documents, maps commits to plans, Q&As unmapped commits with the user, and writes a meta-plan with a slice table at planning/YYYY-MM-DD-code-review-plan-<slug>.md",
       "category": "review-helpers",
       "order": 30
@@ -74,6 +229,8 @@
     {
       "name": "code-review-seed-slices",
       "folder": "code-review-seed-slices",
+      "path": "skills/code-review-seed-slices",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when a code-review meta-plan is finalized and you need to fan it out into one slice spec per row in the meta-plan's slice table \u2014 produces N files in planning/code-reviews/needs-review/ ready for code-intake-review to drain",
       "category": "review-helpers",
       "order": 31
@@ -81,6 +238,8 @@
     {
       "name": "code-review-plan-execute",
       "folder": "code-review-plan-execute",
+      "path": "skills/code-review-plan-execute",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when a code-review meta-plan is ready and you want to drive the full review pipeline \u2014 pre-flight, seed slices, dispatch reviewers per slice, synthesize findings, and notify on completion; defensive and idempotent so repeated runs resume from where the last run stopped",
       "category": "review-helpers",
       "order": 32
@@ -88,6 +247,8 @@
     {
       "name": "code-synthesize-reviews",
       "folder": "code-synthesize-reviews",
+      "path": "skills/code-synthesize-reviews",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when multiple code-review slices have been reviewed and you need a consolidated pre-merge action list \u2014 reads all slice specs in reviewed/ and completed/, filters findings by Status at HEAD: open, groups by severity and file, emits planning/code-reviews/SYNTHESIS-<slug>.md",
       "category": "review-helpers",
       "order": 33
@@ -95,6 +256,8 @@
     {
       "name": "codebase-mapper",
       "folder": "codebase-mapper",
+      "path": "skills/codebase-mapper",
+      "plugin": "ai-plugins-and-skills",
       "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Outputs a token-efficient structure section for CLAUDE.md. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
       "category": "tools",
       "order": 1
@@ -102,6 +265,8 @@
     {
       "name": "ace-fca-workflow",
       "folder": "ace-fca-workflow",
+      "path": "skills/ace-fca-workflow",
+      "plugin": "ai-plugins-and-skills",
       "description": "Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks. Use this skill when working on brownfield codebases, large repos (100k+ LOC), complex bugs, multi-file refactors, or features requiring deep codebase understanding. Triggers include requests to fix bugs in unfamiliar code, implement features in large codebases, understand complex code flows, or when the user mentions \"research plan implement\", \"ACE-FCA\", or \"frequent compaction\". This workflow prevents context window exhaustion and produces high-quality, reviewable artifacts.",
       "category": "tools",
       "order": 2
@@ -109,15 +274,73 @@
     {
       "name": "azure-servicebus-operations",
       "folder": "azure-servicebus-operations",
+      "path": "skills/azure-servicebus-operations",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when peeking, draining, snapshotting metrics on, enumerating, or otherwise inspecting/manipulating Azure Service Bus subscriptions, queues, or dead-letter sub-queues \u2014 including diagnosing DLQ accumulation, capturing parked messages for forensics before discard, draining stuck alert backlogs, comparing active/dlq counts across multiple subs, enumerating an entire namespace's topology, or clearing a subscription's ForwardTo (which the az CLI cannot do).",
+      "category": "tools",
+      "order": null
+    },
+    {
+      "name": "bulk-rename",
+      "folder": "bulk-rename",
+      "path": "skills/bulk-rename",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when a refactor needs the same identifier rename applied across many files (type-cluster renames, magic-string vocabulary moves) \u2014 runs a single bash invocation that does longest-first, word-boundary safe replacements across all tracked files in scope, instead of issuing dozens of per-file Edit tool calls",
+      "category": "tools",
+      "order": null
+    },
+    {
+      "name": "psql-query",
+      "folder": "psql-query",
+      "path": "skills/psql-query",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when running ad-hoc read-only SQL against Azure Database for PostgreSQL \u2014 exploring tables, sampling rows, checking key uniqueness/overlap across tables, inspecting pg_stat_* / pg_catalog, or producing JSON/CSV for a pipeline. Read-only by construction (server-enforced read-only transaction + client-side guard, always rolled back; no INSERT/UPDATE/DELETE/DDL/COPY/dblink). Returns TOON by default for token-efficient consumption by Claude; --format=json|table|csv for other consumers. This is the PostgreSQL counterpart to sql-query (which targets Azure SQL only).",
       "category": "tools",
       "order": null
     },
     {
       "name": "sql-query",
       "folder": "sql-query",
+      "path": "skills/sql-query",
+      "plugin": "ai-plugins-and-skills",
       "description": "Use when running ad-hoc read-only T-SQL against Azure SQL \u2014 exploring Query Store, sampling tables, inspecting DMVs, joining sys.* views, or producing JSON/CSV for an alerting pipeline. Read-only by construction (AST-validated, rolled-back transaction, no INSERT/UPDATE/DELETE/EXEC/OPENROWSET). Returns TOON by default for token-efficient consumption by Claude; --format=json|table|csv for other consumers.",
       "category": "tools",
+      "order": null
+    },
+    {
+      "name": "plan-workflow",
+      "folder": "plan-workflow",
+      "path": "skills/plan-workflow",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every feature document lands in the right directory (planning/, in-progress/, completed/, or backlog/) and stays in source control alongside the code it describes.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "prompt-dotnet",
+      "folder": "prompt-dotnet",
+      "path": "skills/prompt-dotnet",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Composes and executes a standardized, spec-driven, test-first .NET feature prompt. Invoke as /prompt-dotnet followed by the feature description. Chains spec-tier (stakes tiering + review gates), test-filter-development (RED-GREEN-REFACTOR with captured failure output and a seeded mutant), and csharp-quality-developer; if the harness lacks those skills, the inlined discipline is the contract. Oriented to ASP.NET Core services/APIs (the integration test uses WebApplicationFactory). Use when implementing a .NET feature and you want tiered spec depth, an evidenced test filter, and mandatory review.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "spec-tier",
+      "folder": "spec-tier",
+      "path": "skills/spec-tier",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, review gates, and calibration. Use when starting any plan or spec, deciding how much detail a plan needs, onboarding developers to the planning standard, or when unsure whether a spec is over- or under-specified. Invoke BEFORE plan-workflow so it sets the depth plan-workflow then produces.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "test-filter-development",
+      "folder": "test-filter-development",
+      "path": "skills/test-filter-development",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when implementing any feature or bugfix with AI assistance, before writing implementation code. RED \u2192 GREEN \u2192 REFACTOR with the filter made load-bearing - captured failure output rather than attestation, a seeded mutant after GREEN, and rejection when the suite survives it. Use in place of test-driven-development, which names the ordering rather than the mechanism that carries the value.",
+      "category": "workflow-composers",
       "order": null
     }
   ]

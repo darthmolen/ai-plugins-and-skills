@@ -1,0 +1,5 @@
+# Local lift/sanitization audit - names the private source repo, not for publication
+.lift-audit/
+
+# Per-developer Claude Code settings (plugin enable/disable state)
+.claude/settings.local.json

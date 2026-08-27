@@ -8,7 +8,8 @@ set -e
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
-if ! git diff --cached --name-only | grep -qE '^(skills/.*SKILL\.md|scripts/build_index\.py)$'; then
+# Matches the main collection at skills/ and any opt-in plugin at plugins/<name>/skills/.
+if ! git diff --cached --name-only | grep -qE '^((plugins/[^/]+/)?skills/.*SKILL\.md|scripts/build_index\.py)$'; then
     exit 0
 fi
 
