@@ -66,7 +66,42 @@ ai-plugins-and-skills/
 │   │   └── install.sh            # Unix/macOS installer
 │   └── git-hooks/
 │       └── pre-commit            # Runs build_index.py
+├── plugins/                      # Opt-in plugins, installed separately
+│   └── curriculum/
+│       ├── .claude-plugin/
+│       │   └── plugin.json
+│       └── skills/
+│           ├── curriculum-classify/
+│           │   └── SKILL.md
+│           ├── curriculum-design/
+│           │   └── SKILL.md
+│           ├── curriculum-discover/
+│           │   └── SKILL.md
+│           ├── curriculum-extract/
+│           │   └── SKILL.md
+│           ├── curriculum-generate/
+│           │   └── SKILL.md
+│           ├── curriculum-govern/
+│           │   └── SKILL.md
+│           └── curriculum-orchestrate/
+│               └── SKILL.md
 └── skills/
+    ├── angular-architect/
+    │   └── SKILL.md
+    ├── angular-expert/
+    │   └── SKILL.md
+    ├── azure-infra-engineer/
+    │   └── SKILL.md
+    ├── dotnet-secrets/
+    │   └── SKILL.md
+    ├── python-pro/
+    │   └── SKILL.md
+    ├── react-specialist/
+    │   └── SKILL.md
+    ├── sql-pro/
+    │   └── SKILL.md
+    ├── typescript-pro/
+    │   └── SKILL.md
     ├── csharp-quality-developer/
     │   └── SKILL.md
     ├── python-quality-developer/
@@ -99,7 +134,19 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── azure-servicebus-operations/
     │   └── SKILL.md
-    └── sql-query/
+    ├── bulk-rename/
+    │   └── SKILL.md
+    ├── psql-query/
+    │   └── SKILL.md
+    ├── sql-query/
+    │   └── SKILL.md
+    ├── plan-workflow/
+    │   └── SKILL.md
+    ├── prompt-dotnet/
+    │   └── SKILL.md
+    ├── spec-tier/
+    │   └── SKILL.md
+    └── test-filter-development/
         └── SKILL.md
 ```
 

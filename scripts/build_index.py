@@ -16,7 +16,15 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
-SKILLS_DIR = REPO / "skills"
+
+# Each entry is (plugin name, skills directory). The repo ships more than one
+# plugin: the main collection at skills/, plus opt-in plugins under plugins/<name>/
+# whose skills would otherwise sit in every session's always-on context.
+PLUGIN_ROOTS = [
+    ("ai-plugins-and-skills", REPO / "skills"),
+    ("curriculum", REPO / "plugins" / "curriculum" / "skills"),
+]
+
 INDEX_PATH = REPO / "index.json"
 README_PATH = REPO / "README.md"
 ARCH_PATH = REPO / "documentation" / "ARCHITECTURE.md"
@@ -32,7 +40,7 @@ CLAUDE_EXTENSIONS = {
 KNOWN_FIELDS = {"name", "description"} | KNOWN_OPTIONAL | CLAUDE_EXTENSIONS
 
 
-def parse_skill(skill_dir: Path):
+def parse_skill(skill_dir: Path, plugin: str = "ai-plugins-and-skills"):
     """Return (record-or-None, errors, warnings)."""
     errors: list[str] = []
     warnings: list[str] = []
@@ -125,6 +133,8 @@ def parse_skill(skill_dir: Path):
         {
             "name": name,
             "folder": skill_dir.name,
+            "path": skill_dir.relative_to(REPO).as_posix(),
+            "plugin": plugin,
             "description": desc,
             "short_description": short,
             "category": category,
@@ -139,13 +149,27 @@ def scan():
     skills: list[dict] = []
     all_errors: list[str] = []
     all_warnings: list[str] = []
-    for entry in sorted(SKILLS_DIR.iterdir(), key=lambda p: p.name):
-        if not entry.is_dir():
+    seen: dict[str, str] = {}
+    for plugin, root in PLUGIN_ROOTS:
+        if not root.is_dir():
+            all_errors.append(f"{plugin}: skills directory not found at {root.relative_to(REPO)}")
             continue
-        record, errors, warnings = parse_skill(entry)
-        all_errors.extend(errors)
-        all_warnings.extend(warnings)
-        if record is not None:
+        for entry in sorted(root.iterdir(), key=lambda p: p.name):
+            if not entry.is_dir():
+                continue
+            record, errors, warnings = parse_skill(entry, plugin)
+            all_errors.extend(errors)
+            all_warnings.extend(warnings)
+            if record is None:
+                continue
+            # A duplicate name across plugins would make /skill invocation ambiguous.
+            if record["name"] in seen:
+                all_errors.append(
+                    f"{record['name']}: duplicate skill name in plugins "
+                    f"'{seen[record['name']]}' and '{plugin}'"
+                )
+                continue
+            seen[record["name"]] = plugin
             skills.append(record)
     return skills, all_errors, all_warnings
 
@@ -164,6 +188,8 @@ def write_index(skills: list[dict]) -> None:
             {
                 "name": s["name"],
                 "folder": s["folder"],
+                "path": s["path"],
+                "plugin": s["plugin"],
                 "description": s["description"],
                 "category": s["category"],
                 "order": s["order"],
@@ -202,7 +228,7 @@ def update_readme(skills: list[dict]) -> list[str]:
             rows = ["| Skill | Description |", "|-------|-------------|"]
             for s in bucket:
                 rows.append(
-                    f"| [{s['name']}](skills/{s['folder']}/) | {s['short_description']} |"
+                    f"| [{s['name']}]({s['path']}/) | {s['short_description']} |"
                 )
             body = "\n".join(rows)
         return f"<!-- SKILLS: {slug} -->\n{body}\n<!-- END SKILLS: {slug} -->"
@@ -249,14 +275,33 @@ def render_tree(skills: list[dict]) -> str:
         f"{vert}{vert}{corner}install.sh            # Unix/macOS installer",
         f"{vert}{corner}git-hooks/",
         f"{vert}    {corner}pre-commit            # Runs build_index.py",
-        f"{corner}skills/",
     ]
-    for i, s in enumerate(skills):
-        last = i == len(skills) - 1
-        prefix = corner if last else tee
-        child = blank if last else vert
-        lines.append(f"    {prefix}{s['folder']}/")
-        lines.append(f"    {child}{corner}SKILL.md")
+
+    main_skills = [s for s in skills if s["plugin"] == "ai-plugins-and-skills"]
+    extra_plugins = [
+        (name, [s for s in skills if s["plugin"] == name])
+        for name, _ in PLUGIN_ROOTS
+        if name != "ai-plugins-and-skills"
+    ]
+
+    def render_skill_list(bucket: list[dict], indent: str) -> None:
+        for i, s in enumerate(bucket):
+            last = i == len(bucket) - 1
+            lines.append(f"{indent}{corner if last else tee}{s['folder']}/")
+            lines.append(f"{indent}{blank if last else vert}{corner}SKILL.md")
+
+    lines.append(f"{tee}plugins/                      # Opt-in plugins, installed separately")
+    for pi, (pname, bucket) in enumerate(extra_plugins):
+        plast = pi == len(extra_plugins) - 1
+        lines.append(f"{vert}{corner if plast else tee}{pname}/")
+        pchild = f"{vert}{blank if plast else vert}"
+        lines.append(f"{pchild}{tee}.claude-plugin/")
+        lines.append(f"{pchild}{vert}{corner}plugin.json")
+        lines.append(f"{pchild}{corner}skills/")
+        render_skill_list(bucket, f"{pchild}{blank}")
+
+    lines.append(f"{corner}skills/")
+    render_skill_list(main_skills, "    ")
     return "```\n" + "\n".join(lines) + "\n```"
 
 

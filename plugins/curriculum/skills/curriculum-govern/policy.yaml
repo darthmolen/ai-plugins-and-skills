@@ -1,0 +1,58 @@
+# Default governance policy profile.
+#
+# Consumed by the Governance Agent (governance-agent.md) and, for the
+# deterministic gates, by your curriculum validator script.
+#
+# The agent may not relax any gate marked `fail`. It may not approve an exception
+# it proposed itself — that rule is in the agent spec and repeated here because it
+# is the one most likely to be quietly dropped.
+
+version: 1
+profile: default
+
+gates:
+
+  # Deterministic — implemented in validate-curriculum.ps1
+  schema_validity:            fail
+  source_exists:              fail
+  empty_source:               fail   # path resolves but the directory holds no
+                                     # documentation - drift wearing a valid path
+  sources_are_upstream:       fail   # A course sourced only from learning/
+                                     # has become its own source.
+  prerequisite_graph_valid:   fail
+  provenance_complete:        fail
+  sensitive_data_scan:        fail
+
+  # Judgement — require the Governance Agent
+  claims_supported:           fail   # normative claim with no source passage
+  proposals_labeled:          fail   # invented instructional content presented as source-derived
+  contradictions_resolved_or_disclosed: fail
+  deprecated_sources_handled: warn
+  assessment_answers_supported: fail
+  artifact_hashes_present:    fail
+  publication_target_allowed: fail
+  source_revision_pinned:     warn   # warn locally, fail in CI
+
+unreachable_repo: warn   # a repo absent from the workstation warns rather than fails,
+                         # so the validator is usable before every repo is cloned.
+                         # CI overrides this to `fail`.
+
+sensitive_patterns:
+  - 'ConnectionString\s*='
+  - 'AccountKey='
+  - 'SharedAccessSignature'
+  - '(?i)(password|passwd|pwd)\s*[:=]\s*\S+'
+  - '(?i)(api[_-]?key|client[_-]?secret)\s*[:=]\s*\S+'
+  - 'BEGIN (RSA |OPENSSH )?PRIVATE KEY'
+  - 'eyJ[A-Za-z0-9_-]{20,}\.'          # JWT
+
+sensitive_allowlist:
+  # Documentation that legitimately shows the shape of a secret without being one.
+  - 'AZURE_CLIENT_SECRET'              # named as a variable in secrets-hygiene guidance
+  - '<entra-app-client-id>'            # placeholder
+  - 'kv-delta-'                        # Key Vault names are not secrets
+
+publication:
+  requires_status: approved
+  allowed_targets: []    # empty = publication blocked. No approved SharePoint
+                         # destination is configured yet.

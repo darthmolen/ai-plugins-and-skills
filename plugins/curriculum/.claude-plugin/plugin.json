@@ -1,0 +1,19 @@
+{
+  "name": "curriculum",
+  "version": "1.0.0",
+  "description": "A seven-stage pipeline that turns source documentation into course definitions and course artifacts: discover, classify, extract, design, govern, generate — with a governance gate that runs twice. Requires a curriculum workspace to operate on.",
+  "author": {
+    "name": "Steven Molen",
+    "url": "https://github.com/darthmolen"
+  },
+  "homepage": "https://github.com/darthmolen/ai-plugins-and-skills",
+  "repository": "https://github.com/darthmolen/ai-plugins-and-skills",
+  "license": "BSD-2-Clause",
+  "keywords": [
+    "agent-skills",
+    "curriculum",
+    "courseware",
+    "documentation",
+    "governance"
+  ]
+}

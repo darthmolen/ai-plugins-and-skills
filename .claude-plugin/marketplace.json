@@ -16,6 +16,17 @@
         "name": "Steven Molen",
         "url": "https://github.com/darthmolen"
       }
+    },
+    {
+      "name": "curriculum",
+      "description": "A seven-stage pipeline that turns source documentation into course definitions and course artifacts. Install only if you have a curriculum workspace — it is inert otherwise.",
+      "version": "1.0.0",
+      "source": "./plugins/curriculum",
+      "license": "BSD-2-Clause",
+      "author": {
+        "name": "Steven Molen",
+        "url": "https://github.com/darthmolen"
+      }
     }
   ]
 }

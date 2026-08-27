@@ -1,0 +1,55 @@
+# Repository map for curriculum source resolution. Copy to `sources.yaml` in your
+# curriculum workspace and edit for your organization.
+#
+# Every `source_locations` entry in a course.yaml carries a `repo:` qualifier that
+# resolves against this file. Bare paths cannot express a multi-repo corpus.
+#
+# `local` is where the validator looks when running on a workstation. A repo that
+# isn't cloned produces a WARNING, not a failure, so the validator stays useful
+# before every repo is present.
+
+version: 1
+
+organization: your-org
+
+repositories:
+
+  Standards:
+    project: Standards
+    remote: https://github.com/your-org/standards
+    local: .
+    default_branch: main
+    holds: AI standards, skills, plugins. Curriculum machinery and catalog.
+
+  Reporting:
+    project: DevelopmentBestPractices
+    remote: https://github.com/your-org/reporting
+    local: ../reporting
+    default_branch: main
+    holds: Semantic model guidance, BI reporting standards.
+
+  DevelopmentBestPractices:
+    project: DevelopmentBestPractices
+    remote: https://github.com/your-org/development-best-practices
+    local: ../development-best-practices
+    default_branch: main
+    holds: General development practice. Version control fundamentals.
+
+  Core:
+    project: Core
+    remote: https://github.com/your-org/core
+    wiki: https://github.com/your-org/core/wiki
+    local: ../core
+    default_branch: main
+    holds: >-
+      Platform libraries. docs/ is published as the Core wiki, so those pages are
+      real files and are verifiable from a clone - cite them as docs/<page>.md,
+      not as kind: wiki.
+
+# Course definitions are distributed. The validator scans this repo's learning/courses by
+# default; point -CoursesPath at these to validate other tracks.
+course_locations:
+  Standards: learning/courses
+  Reporting: ../reporting/learning/courses
+  DevelopmentBestPractices: ../development-best-practices/learning/courses
+  Core: ../core/learning/courses

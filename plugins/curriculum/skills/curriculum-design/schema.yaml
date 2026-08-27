@@ -1,0 +1,156 @@
+# Course definition schema.
+#
+# Validated by scripts/validate-curriculum.ps1. This file is the contract; the
+# validator is the enforcement. Keep them in step.
+
+version: 1
+
+required:
+  - id                # Uppercase course code, e.g. DATA-301A
+  - slug              # lowercase-hyphenated, must match the containing folder name
+  - title
+  - track
+  - level             # string, from `levels` below
+  - status            # from `statuses` below
+  - audience          # list, at least one entry
+  - description
+  - objectives        # list, at least one
+  - source_locations  # list of {repo, path}; at least one must resolve OUTSIDE learning/
+  - repository_metadata
+
+optional:
+  - duration          # scalar, or {spine, labs, note} - see below
+  - extensions        # labs that only run in a longer delivery
+  - delivery
+  - prerequisites     # list of course ids; must exist and must not form a cycle
+  - modules
+  - labs
+  - assessments
+  - deliverables
+  - instructor_notes
+  - tags
+
+# Level is <tier><sequence>. The FIRST DIGIT carries all the meaning; the remaining two
+# order courses within that tier and imply nothing about difficulty.
+#
+#   301  first tier-3 course      311  second tier-3 course      321  third
+#
+# The tier is a claim about how hard the work is, not about where the course sits in a
+# reading order. The original starter set got this exactly backwards - its PLAT levels were
+# the ordinal of the source wiki page (docs/0 -> 101, docs/7 -> 601), so the number encoded
+# table-of-contents position dressed up as pedagogy. If you can derive a level from document
+# order, you have not assigned one.
+level_pattern: '^[1-5][0-9]{2}$'
+
+tiers:
+  '1': foundation and shared vocabulary
+  '2': guided application
+  '3': independent implementation and integration
+  '4': advanced architecture and orchestration
+  '5': capstone and specialization
+
+# Security is a TOPIC, not a tier. A course on applying authentication components is tier-4
+# architecture work; a security capstone is tier 5. The previous wording listed "security" at
+# 501 and pulled PLAT Authentication there for no reason but the word.
+# There is no tier 6 - "operational mastery" duplicated tier 5 and has been removed.
+
+statuses:
+  starter: Drafted from source but not reconciled. TBD metadata permitted.
+  blocked-no-source: Course is wanted but its source material does not exist yet. Must carry a note saying what is missing.
+  draft: Reconciled with source, not yet reviewed.
+  reviewed: Content reviewed; not yet delivered.
+  published: Delivered at least once. TBD metadata forbidden.
+
+# Status is also the OWNERSHIP LADDER. It records who may rewrite the definition, and it
+# is the answer to "if course.yaml is generated, what happens to my edits?"
+#
+#   starter            machine-drafted, nobody has invested judgement yet.
+#                      curriculum-design may REGENERATE IT WHOLESALE.
+#                      Sources need not be pinned - starter means "not reconciled".
+#
+#   draft and above    a human has reconciled this against its sources.
+#                      curriculum-design may only PROPOSE A DIFF. It never writes.
+#                      Every verifiable source MUST carry a `revision` pin.
+#
+# The transition starter -> draft is the handoff from machine to human, and pinning the
+# sources is the act that performs it. That is why `sources_reconciled` fails an unpinned
+# draft: the status is a claim, and the pins are the evidence for it.
+#
+# A course definition is EDITORIAL, not derived. Selection, sequence, audience, duration,
+# and emphasis are not in the source documents and cannot be regenerated from them. So a
+# definition is scaffolded once and owned thereafter - which also means:
+#
+#   wrong FACT                                   -> fix documentation/
+#   wrong EMPHASIS, SELECTION, AUDIENCE, LENGTH  -> fix course.yaml (this file's subject)
+#   wrong STRUCTURE or TONE OF THE OUTPUT        -> fix the generator skill
+#   never                                        -> edit learning/generated/
+
+source_locations:
+  # Repo-qualified. `repo` resolves against sources.yaml.
+  item:
+    required: [repo, path]
+    optional: [revision, note, kind]
+
+  # `note` is the EMPHASIS DIRECTIVE, and it is the field that makes a course something
+  # other than a restatement of its sources. Four courses can cite the same document and
+  # teach different things from it; `note` is where you say which part this course is
+  # for. The generator reads it. Write it for the generator, not as a filing comment:
+  #
+  #   note: The spine - the two candidates, leak vs investment
+  #   note: The worked example of a leak - schemas re-sent every request
+  #
+  # Both of those cite documents AI-111 uses. They pull opposite ends of them.
+
+  # `revision` is the RECONCILIATION PIN: a digest of the cited content at the moment a
+  # human last checked this course against it. It is not a commit SHA - a digest answers
+  # "did what I read change?" directly, survives squash-merges, and does not care which
+  # repo the file lives in.
+  #
+  #   revision: sha256:7448c4cbe65e62cc
+  #
+  # Get the value from the validator: it prints the correct pin in the failure message.
+  # Digests are taken over content with CRLF normalized to LF, so a pin does not break
+  # when someone with different autocrlf settings clones the repo. A directory source
+  # digests as the sorted list of its (relative path, file digest) pairs.
+  kinds:
+    file: A single file. Must exist. Default when `kind` is omitted and the path has an extension.
+    dir:  A directory. Must exist. Default when the path has no extension.
+    wiki: An Azure DevOps wiki page. Cannot be verified from a clone, so it WARNS
+          rather than fails. Use only for genuine wiki sources — do not reach for it
+          to silence a broken file path.
+  rules:
+    - Every course needs at least one entry whose repo is NOT the learning tree of any
+      repository. A course sourced only from learning/ has become its own source, which
+      breaks the regenerate-don't-rework property.
+    - Paths must exist today. Pointing at intended future content is what produced the
+      original drift.
+    - A directory source must contain documentation (.md/.yaml/.json). A folder holding
+      only a .gitkeep is a placeholder, not a source, and fails `empty_source`.
+    - Pointing at a path that exists but holds the wrong content cannot be caught
+      mechanically. That is the Governance Agent's `claims_supported` gate, and it is
+      the reason the agent is not optional.
+
+repository_metadata:
+  required: [owner, reviewers, last_reviewed, content_status, version]
+  rules:
+    - status `published` may not carry TBD in owner or last_reviewed.
+    - status `starter` may carry TBD; that is what starter means.
+
+# Duration: the spine and the labs move independently, so record them separately.
+#
+#   duration:
+#     spine: 60 minutes        # instructor-led content. Short for argument-driven courses.
+#     labs:  30-90 minutes     # elastic. This is where a cohort's time actually varies.
+#     note:  Tier-1 block targets 3-6 hours total.
+#
+# A flat scalar ("6 hours") is still accepted for courses not yet reconciled, but it hides
+# the split and invites somebody to schedule four hours and fill it with talking. The
+# original starter durations were flat, and like the original levels they were not derived
+# from anything - treat an unreconciled scalar as a guess, not a measurement.
+#
+# `extensions` holds labs that were cut from the core delivery to hit a time budget. Keeping
+# them visible stops the material being lost and lets a longer format pick them back up.
+
+# Naming: <track>-<level><variant?>, lowercase for slug and folder, uppercase for id.
+#   data-301a → DATA-301A
+#   git-101   → GIT-101
