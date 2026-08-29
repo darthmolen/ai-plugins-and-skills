@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-27T01:46:35Z",
+  "generated": "2026-08-29T13:55:33Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -312,7 +312,7 @@
       "folder": "plan-workflow",
       "path": "skills/plan-workflow",
       "plugin": "ai-plugins-and-skills",
-      "description": "Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every feature document lands in the right directory (planning/, in-progress/, completed/, or backlog/) and stays in source control alongside the code it describes.",
+      "description": "Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every feature document lands in the right directory (planning/, in-progress/, completed/, or backlog/) and stays in source control alongside the code it describes. Also covers parallel tracks \u2014 one in-progress plan per track when independent plans run in sub-agents.",
       "category": "workflow-composers",
       "order": null
     },
