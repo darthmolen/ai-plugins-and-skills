@@ -13,7 +13,42 @@ if ! git diff --cached --name-only | grep -qE '^((plugins/[^/]+/)?skills/.*SKILL
     exit 0
 fi
 
-if ! python3 scripts/build_index.py; then
+# Find an interpreter that can actually run build_index.py. `python3` alone is not
+# enough: on Windows it is often the Microsoft Store alias, and the interpreter that
+# answers to a given name is not always the one carrying PyYAML. The test is therefore
+# "can it import yaml", not "does the name resolve".
+find_python() {
+    local candidates=(python3 python "py -3" py)
+    local cmd
+    for cmd in "${candidates[@]}"; do
+        command -v "${cmd%% *}" >/dev/null 2>&1 || continue
+        if $cmd -c 'import yaml' >/dev/null 2>&1; then
+            echo "$cmd"
+            return 0
+        fi
+    done
+    return 1
+}
+
+if [ -n "${PYTHON:-}" ]; then
+    # An explicit choice is honoured strictly — no silent fallback, so CI fails loudly
+    # rather than building with an interpreter nobody asked for.
+    if ! $PYTHON -c 'import yaml' >/dev/null 2>&1; then
+        echo "pre-commit: PYTHON=\"$PYTHON\" cannot import yaml - commit aborted." >&2
+        echo "  Install it there:  $PYTHON -m pip install pyyaml" >&2
+        exit 1
+    fi
+    PY="$PYTHON"
+elif ! PY=$(find_python); then
+    echo "pre-commit: no Python with PyYAML found - commit aborted." >&2
+    echo "  Tried: python3, python, py -3, py. build_index.py needs PyYAML to read" >&2
+    echo "  SKILL.md frontmatter." >&2
+    echo "  Install it:        python -m pip install pyyaml" >&2
+    echo "  Or name one:       PYTHON=\"py -3.12\" git commit ..." >&2
+    exit 1
+fi
+
+if ! $PY scripts/build_index.py; then
     echo "build_index.py failed - commit aborted." >&2
     exit 1
 fi
