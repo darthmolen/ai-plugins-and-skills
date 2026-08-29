@@ -16,10 +16,23 @@ Point this clone's git hooks at the repo-tracked hook directory so the pre-commi
 git config core.hooksPath scripts/git-hooks
 ```
 
+The hook finds its own interpreter: it tries `python3`, `python`, `py -3` and `py`, and takes
+the first one that can `import yaml`. The name is not the test, because on Windows `python3`
+is often the Microsoft Store alias and the interpreter answering to a given name is not
+always the one carrying PyYAML. If none of them can, the hook says so and names the fix
+rather than failing as a validation error. To pin one explicitly -- in CI, or on a machine
+with several Pythons:
+
+```bash
+PYTHON="py -3.12" git commit -m "..."
+```
+
+An explicit `PYTHON` is honoured strictly, with no fallback, so a wrong value fails loudly.
+
 ## Development Workflow
 
 1. Create or edit a `SKILL.md` under `skills/<skill-name>/` (or under `plugins/<plugin>/skills/<skill-name>/` for an opt-in plugin -- see [Multiple plugins](#multiple-plugins))
-2. Run `python3 scripts/build_index.py` to validate and regenerate `index.json`, the README skills table, and the ARCHITECTURE directory tree
+2. Run `python scripts/build_index.py` to validate and regenerate `index.json`, the README skills table, and the ARCHITECTURE directory tree
 3. Commit -- the pre-commit hook re-runs the script and re-stages the regenerated files if any `SKILL.md` changed
 
 ## SKILL.md Format

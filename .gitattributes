@@ -1,0 +1,9 @@
+# Normalise on commit, let each platform have its own working-tree endings.
+* text=auto
+
+# Except anything that is executed as a script. A CRLF shebang is a broken
+# shebang -- `/usr/bin/env bash^M` -- and this repo is developed on Windows with
+# core.autocrlf=true, so without this the git hooks arrive dead in every clone.
+scripts/git-hooks/* text eol=lf
+*.sh   text eol=lf
+*.py   text eol=lf
