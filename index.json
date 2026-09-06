@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-29T13:55:33Z",
+  "generated": "2026-09-06T11:47:29Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -312,7 +312,16 @@
       "folder": "plan-workflow",
       "path": "skills/plan-workflow",
       "plugin": "ai-plugins-and-skills",
-      "description": "Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every feature document lands in the right directory (planning/, in-progress/, completed/, or backlog/) and stays in source control alongside the code it describes. Also covers parallel tracks \u2014 one in-progress plan per track when independent plans run in sub-agents.",
+      "description": "Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every document lands in the right directory (planning/, in-progress/, completed/, not-implemented/, blocked/, backlog/, reminders/, waves/) and stays in source control alongside the code it describes. Also covers parallel tracks \u2014 one in-progress plan per track when independent plans run in sub-agents. Pairs with plan-writing-syntax, which owns what is written inside the document; this owns where the document lives and when it moves.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "plan-writing-syntax",
+      "folder": "plan-writing-syntax",
+      "path": "skills/plan-writing-syntax",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when writing or editing any planning document \u2014 a plan, a backlog stub, a reminder, a review or a wave \u2014 to get its frontmatter right. Owns the shape of the document \u2014 the kind and status fields, the per-kind status vocabularies, what each status is required to carry, and cross-references written as names rather than paths. Pairs with plan-workflow, which owns which directory a document lives in and when it moves. Use it before writing the first line, not after a validator refuses the file.",
       "category": "workflow-composers",
       "order": null
     },
