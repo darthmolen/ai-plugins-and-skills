@@ -142,6 +142,8 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── plan-workflow/
     │   └── SKILL.md
+    ├── plan-writing-syntax/
+    │   └── SKILL.md
     ├── prompt-dotnet/
     │   └── SKILL.md
     ├── spec-tier/
