@@ -80,12 +80,13 @@ Plenty of general-purpose language helpers exist already, so no need to duplicat
 
 <!-- write category flavor text here; the table below is auto-generated -->
 
-Where the review helpers above handle one review, these decide how much process a piece of work deserves in the first place — and then hold you to it. Start with [spec-tier](skills/spec-tier/) to route a task to a Low/Medium/High spec depth by stakes, let [plan-workflow](skills/plan-workflow/) move the resulting document through the `planning/` kanban, and use [test-filter-development](skills/test-filter-development/) instead of plain TDD when an agent is writing the code — it makes the test filter load-bearing by demanding captured RED output and a seeded mutant rather than a claim that the tests were written first.
+Where the review helpers above handle one review, these decide how much process a piece of work deserves in the first place — and then hold you to it. Start with [spec-tier](skills/spec-tier/) to route a task to a Low/Medium/High spec depth by stakes, let [plan-workflow](skills/plan-workflow/) move the resulting document through the `planning/` kanban while [plan-writing-syntax](skills/plan-writing-syntax/) governs what goes *on* the card — the frontmatter, the per-kind status vocabularies, and cross-references written as names so they survive the document moving column — and use [test-filter-development](skills/test-filter-development/) instead of plain TDD when an agent is writing the code — it makes the test filter load-bearing by demanding captured RED output and a seeded mutant rather than a claim that the tests were written first.
 
 <!-- SKILLS: workflow-composers -->
 | Skill | Description |
 |-------|-------------|
 | [plan-workflow](skills/plan-workflow/) | Manages planning documentation through the kanban board at planning/ |
+| [plan-writing-syntax](skills/plan-writing-syntax/) | Use when writing or editing any planning document — a plan, a backlog stub, a reminder, a review ... |
 | [prompt-dotnet](skills/prompt-dotnet/) | Composes and executes a standardized, spec-driven, test-first .NET feature prompt |
 | [spec-tier](skills/spec-tier/) | Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, revi... |
 | [test-filter-development](skills/test-filter-development/) | Use when implementing any feature or bugfix with AI assistance, before writing implementation code |
