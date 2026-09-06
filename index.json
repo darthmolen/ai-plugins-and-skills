@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-06T11:47:29Z",
+  "generated": "2026-09-06T12:26:47Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -312,7 +312,7 @@
       "folder": "plan-workflow",
       "path": "skills/plan-workflow",
       "plugin": "ai-plugins-and-skills",
-      "description": "Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every document lands in the right directory (planning/, in-progress/, completed/, not-implemented/, blocked/, backlog/, reminders/, waves/) and stays in source control alongside the code it describes. Also covers parallel tracks \u2014 one in-progress plan per track when independent plans run in sub-agents. Pairs with plan-writing-syntax, which owns what is written inside the document; this owns where the document lives and when it moves.",
+      "description": "Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every document lands in the right directory (planning/, in-progress/, completed/, not-implemented/, blocked/, backlog/, reminders/, waves/, evidence/, needs-review/) and stays in source control alongside the code it describes. Also covers parallel tracks \u2014 one in-progress plan per track when independent plans run in sub-agents. Pairs with plan-writing-syntax, which owns what is written inside the document; this owns where the document lives and when it moves.",
       "category": "workflow-composers",
       "order": null
     },

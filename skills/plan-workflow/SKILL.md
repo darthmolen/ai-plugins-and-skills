@@ -1,6 +1,6 @@
 ---
 name: plan-workflow
-description: Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every document lands in the right directory (planning/, in-progress/, completed/, not-implemented/, blocked/, backlog/, reminders/, waves/) and stays in source control alongside the code it describes. Also covers parallel tracks — one in-progress plan per track when independent plans run in sub-agents. Pairs with plan-writing-syntax, which owns what is written inside the document; this owns where the document lives and when it moves.
+description: Manages planning documentation through the kanban board at planning/. Use when creating, progressing, or completing plans to ensure every document lands in the right directory (planning/, in-progress/, completed/, not-implemented/, blocked/, backlog/, reminders/, waves/, evidence/, needs-review/) and stays in source control alongside the code it describes. Also covers parallel tracks — one in-progress plan per track when independent plans run in sub-agents. Pairs with plan-writing-syntax, which owns what is written inside the document; this owns where the document lives and when it moves.
 metadata:
   category: workflow-composers
 ---
@@ -152,9 +152,11 @@ List blocking work or required context.
 
 ---
 
-## Status Section (appended when a plan reaches a terminal state)
+## Status Section (appended whenever a plan leaves `in-progress/`)
 
-Append this block to the document **before moving it**, and update the frontmatter `status:` in the same edit:
+Append this block to the document **before moving it**, and update the frontmatter `status:` in the same edit.
+
+**Every departure from `in-progress/` gets one, not only the terminal ones.** A plan returned to the queue half-done is exactly the one whose Status block matters most — it is the only record of where the work stopped and what the next session is walking into. `Final Status: Incomplete` is a real value.
 
 ```markdown
 ---

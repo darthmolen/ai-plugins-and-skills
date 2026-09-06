@@ -138,7 +138,7 @@ not drift.**
 | `stub/promoted` | `planning/backlog/` | `promoted_` |
 | `stub/closed` | `planning/backlog/` | `closed_` |
 | `reminder/open` | `planning/reminders/` | — |
-| `reminder/done`, `dropped` | `planning/reminders/completed/` **or** `planning/reminders/` | — |
+| `reminder/done`, `reminder/dropped` | `planning/reminders/completed/` **or** `planning/reminders/` | — |
 | `wave` | `planning/waves/` | — |
 
 **A closed reminder has two homes on purpose.** Closing and filing are two acts: a tool closes a
