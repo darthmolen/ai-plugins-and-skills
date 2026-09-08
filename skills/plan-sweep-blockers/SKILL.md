@@ -94,10 +94,11 @@ blocked_on: a colour-calibrated display none of the team owns, for the contrast 
 nothing. "Blocked on a display none of us owns, for a measurement that cannot be taken on any
 machine we do own" tells them exactly what to bring into the room.
 
-Update the plan's `## Status` section in the same edit, with `**Final Status:** Blocked` and a
-sentence on where the work stopped — `plan-workflow` requires one on *every* departure from
-`in-progress/`, not only the terminal ones. **Do not leave a `**Status:**` prose line beside the
-field**; the section carries the reasoning, the frontmatter carries the fact.
+Add a `## Status` section in the same edit recording where the work stopped —
+`plan-workflow` requires one on *every* departure from `in-progress/`, not only the terminal
+ones. Put the reasoning there and nothing else: the status itself is the `status:` field above,
+and a `**Final Status:**` line repeating it is exactly the drift `plan-writing-syntax` exists to
+end.
 
 A blocked column whose entries do not say why is a place plans go to be forgotten.
 
