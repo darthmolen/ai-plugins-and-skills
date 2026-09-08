@@ -8,6 +8,48 @@ set -e
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
+# ── Sanitization gate ─────────────────────────────────────────────────
+# This repository was created by lifting skills out of a corporate repo. That
+# de-CSAT pass was a one-time manual grep: case-sensitive, and with a pattern
+# that never covered the resource prefixes actually in use. Production
+# hostnames, a client name and a bootstrap script name shipped anyway, and sat
+# here for weeks (see .lift-audit/AUDIT.md). This is the same idea made
+# automatic, case-insensitive, and run against *staged content* rather than a
+# working tree somebody remembered to check.
+#
+# It runs before the early exit below on purpose: a leak can arrive in a .cs
+# script or a doc, not only in a SKILL.md.
+#
+# SKIP_SANITIZE_CHECK=1 bypasses it, for edits to .lift-audit/ itself, which
+# necessarily quotes the strings being banned.
+
+SANITIZE_PATTERN='csatsolutions|\bcsat\b|csat[-_.]|\bdell\b|\bddr\b|\bipqc\b|ai_server_bolt|14 day loopers|\bdomino\b|\blenovo\b|\blethal\b|\bcheetah\b|\bcubiscan\b|e22c1771|sql-delta|sbns-delta|pg-delta|\bdelta\b|stage-engineering'
+
+if [ -z "${SKIP_SANITIZE_CHECK:-}" ]; then
+    sanitize_hits=""
+    while IFS= read -r staged_file; do
+        case "$staged_file" in
+            .lift-audit/*) continue ;;
+        esac
+        hit=$(git show ":$staged_file" 2>/dev/null | grep -nIiE "$SANITIZE_PATTERN" || true)
+        if [ -n "$hit" ]; then
+            sanitize_hits="${sanitize_hits}
+--- ${staged_file} ---
+${hit}"
+        fi
+    done < <(git diff --cached --name-only --diff-filter=ACM)
+
+    if [ -n "$sanitize_hits" ]; then
+        echo "pre-commit: corporate identifiers in staged content - commit aborted." >&2
+        echo "$sanitize_hits" >&2
+        echo "" >&2
+        echo "  This is a public BSD-2-Clause repository. Replace the identifier with a" >&2
+        echo "  placeholder (your-server, your-db, example-messages, ...) and stage again." >&2
+        echo "  Bypass, for .lift-audit/ edits only:  SKIP_SANITIZE_CHECK=1 git commit ..." >&2
+        exit 1
+    fi
+fi
+
 # Matches the main collection at skills/ and any opt-in plugin at plugins/<name>/skills/.
 if ! git diff --cached --name-only | grep -qE '^((plugins/[^/]+/)?skills/.*SKILL\.md|scripts/build_index\.py)$'; then
     exit 0
