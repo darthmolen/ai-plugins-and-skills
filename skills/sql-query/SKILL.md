@@ -28,8 +28,10 @@ Auth via `DefaultAzureCredential` (env-SPN → MI → AzureCLI → VS). `az logi
 
 ## Path variable
 
+Set the script path once per session — works whether installed via plugin or as a user skill.
+
 ```powershell
-# Set once per session — works whether installed via plugin or as a user skill
+# PowerShell
 $sql = if ($env:CLAUDE_PLUGIN_ROOT) {
   "$env:CLAUDE_PLUGIN_ROOT\skills\sql-query\scripts"
 } else {
@@ -37,43 +39,63 @@ $sql = if ($env:CLAUDE_PLUGIN_ROOT) {
 }
 ```
 
-## Targets (known servers/DBs in this org)
+```bash
+# Bash
+sql="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/skills/sql-query/scripts"
+```
 
-Expand `target` into `<server> <database>` for the script invocation:
+## Server and database arguments
 
-| target            | server                                | database          |
-|-------------------|---------------------------------------|-------------------|
-| alpha-prod        | sql-delta-prod.database.windows.net   | alpha-db          |
-| alpha-stage       | sql-delta-stage.database.windows.net  | alpha-db          |
-| dwh-prod          | sql-delta-prod.database.windows.net   | data-warehouse    |
-| stage-eng-prod    | sql-delta-prod.database.windows.net   | stage-engineering |
-| cubiscan-prod     | sql-delta-prod.database.windows.net   | cubiscan          |
+The first two positional args are the target `<server>` and `<database>`:
 
-Add new rows here as the workload grows. The script itself does not enforce an allowlist — the table is a convenience for callers (especially Claude) so it doesn't have to guess FQDNs.
+- `<server>` — the Azure SQL logical server FQDN, e.g. `your-server.database.windows.net`.
+- `<database>` — the database name on that server.
+
+This skill is deliberately **infrastructure-agnostic**: it hard-codes no server list. Which servers and databases exist for a given project is *that project's* concern and changes on a different cadence than this tool — keep that registry in the project's own resource skill (e.g. a `*-azure-topology` skill) or its `CLAUDE.md`, not here.
 
 ## Usage
 
-```powershell
-# Inline query, TOON output (default — best for LLM consumption)
-dotnet run $sql\sql-query.cs sql-delta-prod.database.windows.net alpha-db `
-  "SELECT TOP 10 name, object_id FROM sys.tables ORDER BY name"
+### The one reliable shape (use this — same in PowerShell and bash)
 
-# Query from a file (recommended for non-trivial queries — avoids PS quoting hell)
-dotnet run $sql\sql-query.cs sql-delta-prod.database.windows.net alpha-db `
-  "@C:\temp\top-queries.sql"
+**Always put `--` right after the script path**, then pass the query as `@file`:
 
-# JSON output for piping into jq (alerting pipeline)
-dotnet run $sql\sql-query.cs sql-delta-prod.database.windows.net alpha-db `
-  "@C:\temp\check.sql" --format=json --max-rows=10000
-
-# Diagnose auth — see which credential method actually succeeded
-dotnet run $sql\sql-query.cs sql-delta-prod.database.windows.net alpha-db `
-  "SELECT SUSER_SNAME()" --verbose
-
-# Force a specific credential method (skip the DefaultAzureCredential chain)
-dotnet run $sql\sql-query.cs sql-delta-prod.database.windows.net alpha-db `
-  "SELECT @@VERSION" --auth=cli
 ```
+dotnet run <script> -- <server> <database> "@<path-to-.sql>" [flags]
+```
+
+Why `--`: `dotnet run` otherwise treats a leading-`@` argument as a .NET **response file** and expands
+it (splitting the file's contents on whitespace into separate args) *before* the script's own argument
+parser runs — you get a failure like `unknown arg: SELECT TOP 20`. The `--` sends every following token
+to the script untouched, so the script's own `@file` reader loads the query. The `.sql` file can be
+**multi-line and readable**; the SQL never touches the shell, so there is no quoting, escaping, or
+line-continuation for the shell to get wrong, and it behaves identically in both shells. Keep the whole
+`dotnet run` on **one physical line** — no `` ` `` (PowerShell) or `\` (bash) continuations.
+
+```powershell
+# PowerShell — $base is your scratchpad/temp dir holding the .sql file
+dotnet run "$sql\sql-query.cs" -- your-server.database.windows.net your-db "@$base\query.sql" --format=table --max-cell-bytes=8000 --timeout=120
+```
+
+```bash
+# Bash — $base is your scratchpad/temp dir holding the .sql file
+dotnet run "$sql/sql-query.cs" -- your-server.database.windows.net your-db "@$base/query.sql" --format=table --max-cell-bytes=8000 --timeout=120
+```
+
+### Trivial one-liners
+
+A short query can be passed inline instead of via a file — still put `--` first:
+
+```powershell
+dotnet run "$sql\sql-query.cs" -- your-server.database.windows.net your-db "SELECT TOP 10 name, object_id FROM sys.tables ORDER BY name"
+```
+
+### Common flag combinations
+
+Append these to the command (after the query arg):
+
+- `--format=json --max-rows=10000` — JSON envelope for piping into `jq` (alerting pipelines)
+- `--verbose` — report which credential method actually succeeded (auth diagnosis)
+- `--auth=cli` — force a specific credential method, skipping the `DefaultAzureCredential` chain
 
 ## Output formats
 
@@ -145,8 +167,7 @@ The JSON envelope is designed to plug into a `jq`-driven alert pipeline:
 
 ```powershell
 # Example: alert if any query in Query Store ran > 30s in the last hour
-$result = dotnet run $sql\sql-query.cs sql-delta-prod.database.windows.net alpha-db `
-  "@C:\alerts\slow-queries-1h.sql" --format=json --max-rows=100
+$result = dotnet run "$sql\sql-query.cs" -- your-server.database.windows.net your-db "@C:\alerts\slow-queries-1h.sql" --format=json --max-rows=100
 
 $result | jq -e '.rows | length > 0' > $null
 if ($LASTEXITCODE -eq 0) {

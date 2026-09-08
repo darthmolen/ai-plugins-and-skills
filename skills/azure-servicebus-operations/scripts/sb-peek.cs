@@ -13,7 +13,7 @@ using Azure.Messaging.ServiceBus;
 if (args.Length < 3)
 {
     Console.Error.WriteLine("Usage: dotnet run sb-peek.cs <namespace> <topic-or-queue> <subscription-or-empty> [count] [--subqueue=main|deadletter] [--write-messages=true|false] [--out=DIR]");
-    Console.Error.WriteLine("  namespace          : short name (sbns-delta-alpha-prod) or FQDN");
+    Console.Error.WriteLine("  namespace          : short name (sbns-example-prod) or FQDN");
     Console.Error.WriteLine("  topic-or-queue     : topic name (sub mode) OR queue name (when subscription arg is empty string).");
     Console.Error.WriteLine("  subscription       : subscription name OR empty string \"\" to peek a queue directly.");
     Console.Error.WriteLine("  count              : messages to peek (default 1, non-destructive)");

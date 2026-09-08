@@ -8,7 +8,7 @@ using Azure.Messaging.ServiceBus;
 if (args.Length < 3)
 {
     Console.Error.WriteLine("Usage: dotnet run sb-consume.cs <namespace> <topic> <subscription> [count]");
-    Console.Error.WriteLine("  namespace : short name (sbns-delta-alpha-prod) or FQDN");
+    Console.Error.WriteLine("  namespace : short name (sbns-example-prod) or FQDN");
     Console.Error.WriteLine("  count     : messages to receive+complete (default 1)");
     return 1;
 }

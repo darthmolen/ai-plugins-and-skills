@@ -43,7 +43,7 @@ if (args.Length < 3 || args.Any(a => a is "--help" or "-h"))
 {
     Console.Error.WriteLine("Usage: dotnet run psql-query.cs <host> <database> <query-or-@file> [flags]");
     Console.Error.WriteLine("  host         FQDN, e.g. pg-myserver.postgres.database.azure.com");
-    Console.Error.WriteLine("  database     e.g. dell-orders");
+    Console.Error.WriteLine("  database     e.g. your-db");
     Console.Error.WriteLine("  query        SQL text, OR @path-to-file (recommended for non-trivial queries)");
     Console.Error.WriteLine("");
     Console.Error.WriteLine("Flags:");

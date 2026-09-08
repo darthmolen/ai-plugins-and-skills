@@ -42,13 +42,13 @@ Enumerate Service Bus entities. Default hierarchical text view; `--json` for mac
 
 ```powershell
 # Shotgun the whole namespace, save snapshot for later questions
-dotnet run $sb\sb-discovery.cs sbns-delta-alpha-prod --json --out=topology.json
+dotnet run $sb\sb-discovery.cs sbns-example-prod --json --out=topology.json
 
 # Narrow to one topic + its subs, with counts (fast because scope is small)
-dotnet run $sb\sb-discovery.cs sbns-delta-alpha-prod dell-b2b-messages --with-counts
+dotnet run $sb\sb-discovery.cs sbns-example-prod example-messages --with-counts
 
 # Mix topic + queue in one call
-dotnet run $sb\sb-discovery.cs sbns-delta-alpha-prod dell-b2b-messages dell-b2b_admin-message_default
+dotnet run $sb\sb-discovery.cs sbns-example-prod example-messages example_order-event_default
 ```
 
 `--with-counts` adds active+dlq numbers per entity (slower; pairs well with narrowed args).
@@ -57,11 +57,11 @@ dotnet run $sb\sb-discovery.cs sbns-delta-alpha-prod dell-b2b-messages dell-b2b_
 Snapshot counts + FwdTo for one or more entities in a single call. Default ASCII table; `--json` for newline-delimited JSON per entity. Entity is either `queueName` or `topicName/subscription`.
 
 ```powershell
-dotnet run $sb\sb-metrics.cs sbns-delta-alpha-prod `
-  dell-b2b_admin-message_default `
-  dell-b2b-messages/admin-message_ConnectorRequestNotification `
-  dell-b2b-messages/admin-message_ConnectorResponseNotification `
-  dell-b2b-messages/admin-message_SendAlertCommand
+dotnet run $sb\sb-metrics.cs sbns-example-prod `
+  example_order-event_default `
+  example-messages/order-event_RequestNotification `
+  example-messages/order-event_ResponseNotification `
+  example-messages/order-event_SendAlertCommand
 ```
 
 ## sb-peek
@@ -69,28 +69,28 @@ Non-destructive peek. Pass `""` for the subscription arg to peek a queue directl
 
 ```powershell
 # Capture all DLQ entries on a queue to disk for forensics
-dotnet run $sb\sb-peek.cs sbns-delta-alpha-prod dell-b2b_admin-message_default "" 1100 --subqueue=deadletter --write-messages=true
+dotnet run $sb\sb-peek.cs sbns-example-prod example_order-event_default "" 1100 --subqueue=deadletter --write-messages=true
 ```
 
 ## sb-drain
 Destructive (`ReceiveAndDelete`). Refuses without `--confirm=true`. `--max=N` caps drained count (default 1000). **Always pair with `sb-peek --write-messages=true` first if forensics matter** — drained messages are unrecoverable.
 
 ```powershell
-dotnet run $sb\sb-drain.cs sbns-delta-alpha-prod dell-b2b-messages admin-message_SendAlertCommand --confirm=true --max=200
+dotnet run $sb\sb-drain.cs sbns-example-prod example-messages order-event_SendAlertCommand --confirm=true --max=200
 ```
 
 ## sb-clear-fwd
 The az CLI rejects `--forward-to ""` with `LinkedInvalidPropertyId`. This script clears `ForwardTo` via `ServiceBusAdministrationClient.UpdateSubscriptionAsync` (which accepts null).
 
 ```powershell
-dotnet run $sb\sb-clear-fwd.cs sbns-delta-alpha-prod dell-b2b-messages orders-message_RealtimeMessageReceivedNotification
+dotnet run $sb\sb-clear-fwd.cs sbns-example-prod example-messages orders-message_RealtimeMessageReceivedNotification
 ```
 
 ## sb-consume
 Destructive `PeekLock` + `CompleteMessageAsync`. Use for consumer-pipeline smoke tests where each message is acked individually (rather than batch-deleted).
 
 ```powershell
-dotnet run $sb\sb-consume.cs sbns-delta-alpha-prod dell-b2b-messages orders-message_SomeRoute 50
+dotnet run $sb\sb-consume.cs sbns-example-prod example-messages orders-message_SomeRoute 50
 ```
 
 ## Memory integration
@@ -98,7 +98,7 @@ dotnet run $sb\sb-consume.cs sbns-delta-alpha-prod dell-b2b-messages orders-mess
 After running `sb-discovery --out=FILE`, save a Claude reference-memory entry pointing at the file so future questions can be answered against the snapshot without re-querying:
 
 ```
-- [SB topology snapshot — sbns-delta-alpha-prod 2026-05-17](reference_sb_topology_alpha_prod_20260517.md) — pointer to JSON; refresh with sb-discovery before relying on it.
+- [SB topology snapshot — sbns-example-prod 2026-05-17](reference_sb_topology_alpha_prod_20260517.md) — pointer to JSON; refresh with sb-discovery before relying on it.
 ```
 
 ## Common mistakes

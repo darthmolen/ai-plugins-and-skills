@@ -44,8 +44,8 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 if (args.Length < 3 || args.Any(a => a is "--help" or "-h"))
 {
     Console.Error.WriteLine("Usage: dotnet run sql-query.cs <server> <database> <query-or-@file> [flags]");
-    Console.Error.WriteLine("  server       FQDN, e.g. sql-delta-prod.database.windows.net");
-    Console.Error.WriteLine("  database     e.g. alpha-db");
+    Console.Error.WriteLine("  server       FQDN, e.g. your-server.database.windows.net");
+    Console.Error.WriteLine("  database     e.g. your-db");
     Console.Error.WriteLine("  query        SQL text, OR @path-to-file (recommended for non-trivial queries)");
     Console.Error.WriteLine("");
     Console.Error.WriteLine("Flags:");
