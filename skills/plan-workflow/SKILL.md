@@ -156,16 +156,15 @@ List blocking work or required context.
 
 Append this block to the document **before moving it**, and update the frontmatter `status:` in the same edit.
 
-**Every departure from `in-progress/` gets one, not only the terminal ones.** A plan returned to the queue half-done is exactly the one whose Status block matters most — it is the only record of where the work stopped and what the next session is walking into. `Final Status: Incomplete` is a real value.
+**The section carries the reasoning; the frontmatter carries the facts.** `status:`, `track:` and `completed:` are fields, and `plan-writing-syntax` owns them — a `**Final Status:**` line repeating one here is the drift that contract exists to end. What belongs below is the half no field can hold.
+
+**Every departure from `in-progress/` gets one, not only the terminal ones.** A plan returned to the queue half-done is exactly the one whose Status section matters most — it is the only record of where the work stopped and what the next session is walking into. Its `status:` goes back to `queued`; the section says why it is not further along.
 
 ```markdown
 ---
 
 ## Status
 
-**Final Status:** Completed | Incomplete | Not Implemented | Blocked
-**Track:** main | <track-slug>
-**Completed:** YYYY-MM-DD (or N/A)
 **Completed By:** [name or agent]
 
 ### Outcomes
@@ -178,7 +177,7 @@ Append this block to the document **before moving it**, and update the frontmatt
 - Non-obvious findings worth carrying forward.
 
 ### Backlog Items Created
-- <name>_<date> — one-line summary
+- <stub-name> — one-line summary
 ```
 
 **Write it in the minutes after finishing, not from a diff a week later.** The deviations and the lessons are the half nothing else in the repository records, and they are the half that is reconstructed worst.
@@ -274,8 +273,8 @@ describes belong in the same commit, and that commit belongs to one track.
 
 ### Returning a plan to the queue
 
-An interrupted plan keeps its `Track` value in the Status block — that is the record of
-where it ran — but the value is advisory once the document is back in `planning/`.
+An interrupted plan keeps its `track:` field — that is the record of where it ran — but
+the value is advisory once the document is back in `planning/`.
 Reassign it when the plan restarts; the track it used before may be busy or gone.
 
 ---

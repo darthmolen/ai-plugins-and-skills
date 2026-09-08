@@ -32,7 +32,7 @@ type: code-review-plan     # meta-plan describing how to slice a branch for revi
 
 Both flow through `plan-intake-review` and `plan-receive-review` identically. The discriminator matters at the boundary: `plan-intake-review` auto-forwards `type: code-review-slice` files to the code-review queue, because they do not belong here.
 
-A `type: reminder` document never enters this queue at all. Reminders are not reviewed — see `reminders-set`.
+A reminder never enters this queue at all. It carries `kind: reminder` — a corpus field owned by `plan-writing-syntax`, not a `type:` value — and reminders are not reviewed. See `reminders-set`.
 
 If the plan being copied has no `type` field, treat it as `type: plan`.
 
