@@ -155,7 +155,7 @@ Always read secrets through `IConfiguration` or environment variables. Never acc
 // CORRECT — read from configuration
 var connString = configuration["System:AppConfig:ConnectionString"]
     ?? throw new InvalidOperationException(
-        "System:AppConfig:ConnectionString is not set. Run bootstrap-csat-secrets.ps1.");
+        "System:AppConfig:ConnectionString is not set. Run bootstrap-secrets.ps1.");
 
 // CORRECT — DefaultAzureCredential picks up AZURE_CLIENT_ID/SECRET automatically
 var credential = new DefaultAzureCredential();

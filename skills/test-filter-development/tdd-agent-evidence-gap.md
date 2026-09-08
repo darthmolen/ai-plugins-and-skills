@@ -70,7 +70,7 @@ test **proven able to fail for the right reason**, with two mechanical checks:
    restore. RED alone proves a test detects *absent*, never *present-and-wrong* — one mutant, and the
    easiest one. Survival is rejection, not a note.
 
-The skill that carries it is `csat-standards:test-filter-development`, named for the mechanism rather
+The skill that carries it is `test-filter-development`, named for the mechanism rather
 than the ordering. `superpowers:test-driven-development` is retained, unmodified, so the difference
 stays legible.
 
