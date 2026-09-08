@@ -34,6 +34,21 @@ If files exist in `in-progress/`:
 - Ask: Resume the stale review, or move it back to `needs-review/` and start fresh?
 - Wait for user decision before proceeding.
 
+### Step 2.5: Defensive Type Check
+
+Read the file's frontmatter `type:` field (if present):
+
+| Found type | Action |
+|---|---|
+| `plan` | OK — proceed to Step 3. |
+| `code-review-plan` | OK — meta-plans review like any plan. Proceed to Step 3. |
+| (missing) | OK — treat as `plan`. Proceed to Step 3. |
+| `code-review-slice` | **Auto-forward.** Move file to `planning/code-reviews/needs-review/<file>.md` and alert: "Auto-forwarded `<filename>` from plan queue to code-review queue (type: code-review-slice)." Skip this run; the file will be picked up by `code-intake-review`. |
+| `reminder` | Move back to `needs-review/` with an intake-error note: reminders are not reviewed. See `reminders-set`. Alert user. |
+| any other value | Move back to `needs-review/` (if not already there) with a one-line intake-error note prepended quoting the unexpected value. Alert user. |
+
+This is the mirror of `code-intake-review`'s Step 3a. Together the two checks self-correct a spec dropped in the wrong queue without losing the file — which matters because the two queues are one keystroke apart and the failure is otherwise silent.
+
 ### Step 3: Move to In-Progress
 
 ```bash

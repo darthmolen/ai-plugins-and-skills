@@ -43,7 +43,9 @@ Read the plan file now. Read {PROJECT_ROOT}/CLAUDE.md for project conventions.
 - Follows project versioning rules (CLAUDE.md)?
 - Respects component hierarchy (CLAUDE.md)?
 - Build system changes accounted for (esbuild.js)?
-- Testing approach matches project conventions (TDD)?
+- Testing approach matches project conventions (`test-filter-development`)?
+- Does each cycle name the assertion **and** the mutant it must catch, or only the test file?
+- Is the RED step evidenced (captured failure output) rather than attested?
 
 **Gaps:**
 - Missing requirements that should be addressed?
