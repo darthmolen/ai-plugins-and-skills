@@ -16,6 +16,14 @@ Point this clone's git hooks at the repo-tracked hook directory so the pre-commi
 git config core.hooksPath scripts/git-hooks
 ```
 
+This repository was built by lifting skills out of a corporate repo, so the hook also refuses any
+commit whose staged content carries a corporate identifier -- a client name, a production hostname,
+a tenant GUID. The check runs before the index rebuild and reports the file and line. When it fires,
+replace the identifier with a placeholder (`your-server`, `your-db`, `example-messages`) rather than
+bypassing it; the bypass, `SKIP_SANITIZE_CHECK=1`, exists for edits to `.lift-audit/`, which
+necessarily quotes the strings being banned. See `.lift-audit/AUDIT.md` for what leaked when this
+was a manual grep instead.
+
 The hook finds its own interpreter: it tries `python3`, `python`, `py -3` and `py`, and takes
 the first one that can `import yaml`. The name is not the test, because on Windows `python3`
 is often the Microsoft Store alias and the interpreter answering to a given name is not
@@ -59,7 +67,7 @@ The `name` must match the directory name. The `description` determines when AI a
 ### Scripts
 
 - **`scripts/build_index.py`** — validates every `SKILL.md` against the Agent Skills spec and regenerates `index.json`, the README skills table, and the ARCHITECTURE directory tree. Scans every root listed in its `PLUGIN_ROOTS` constant, and rejects a skill name used by more than one plugin. Exits 1 on validation failure.
-- **`scripts/git-hooks/pre-commit`** — runs `build_index.py` when a staged change touches `skills/*/SKILL.md`, `plugins/*/skills/*/SKILL.md`, or `scripts/build_index.py`, then re-stages the regenerated artifacts. Activated per clone via `git config core.hooksPath scripts/git-hooks` (see [One-time setup](#one-time-setup)).
+- **`scripts/git-hooks/pre-commit`** — two checks. First the **sanitization gate**: staged content is scanned case-insensitively for corporate identifiers, and the commit is refused if any appear. Then, when a staged change touches `skills/*/SKILL.md`, `plugins/*/skills/*/SKILL.md`, or `scripts/build_index.py`, it runs `build_index.py` and re-stages the regenerated artifacts. Activated per clone via `git config core.hooksPath scripts/git-hooks` (see [One-time setup](#one-time-setup)).
 
 ### Generated files
 
