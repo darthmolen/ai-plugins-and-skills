@@ -24,6 +24,14 @@ This skill owns the judgement — when something deserves a reminder rather than
 phase or a backlog stub, and what has to be written in the body for the reminder to be actionable
 later.
 
+**It is `reminders-set`, not `plan-reminder-set`, deliberately.** A reminder can be about
+anything; its document merely happens to live on the kanban. `plan-writing-syntax` gives it its
+own status vocabulary rather than folding it into the plan enum — *forcing a reminder into the
+plan enum would be a lie about what a reminder is* — and its `plan:` reference is a name rather
+than a path precisely because a reminder outlives whatever raised it. So this skill sits
+*beside* the `plan-*` family rather than in it, and `metadata.category` is what files it with
+them.
+
 ## When to write one
 
 Write one when a plan names something that:
