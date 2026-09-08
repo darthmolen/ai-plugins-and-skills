@@ -140,11 +140,19 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── sql-query/
     │   └── SKILL.md
+    ├── plan-clear-blockers/
+    │   └── SKILL.md
+    ├── plan-record-review/
+    │   └── SKILL.md
+    ├── plan-sweep-blockers/
+    │   └── SKILL.md
     ├── plan-workflow/
     │   └── SKILL.md
     ├── plan-writing-syntax/
     │   └── SKILL.md
     ├── prompt-dotnet/
+    │   └── SKILL.md
+    ├── reminders-set/
     │   └── SKILL.md
     ├── spec-tier/
     │   └── SKILL.md
