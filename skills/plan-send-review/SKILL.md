@@ -8,6 +8,34 @@ metadata:
 # Send Plan for Review
 
 Copy the active session's plan file to the project's review queue so the other AI agent can review it.
+## Naming Convention
+
+Plans copied into `planning/needs-review/` follow this format strictly:
+
+```
+YYYY-MM-DD-<slug>.md
+```
+
+- `YYYY-MM-DD` is the date the plan is queued (today, when this skill runs).
+- `<slug>` is a kebab-case slug derived from the plan's first H1 heading.
+
+This is enforced regardless of agent (Claude Code, Copilot CLI, etc.). Any agent picking up plan files from the queue should expect this format. It mirrors the convention `code-send-review` applies to slice specs, so both queues read the same way.
+
+## Frontmatter Convention
+
+The plan being copied should carry a frontmatter `type:` field. Two types use this flow:
+
+```yaml
+type: plan                 # standard plan (default)
+type: code-review-plan     # meta-plan describing how to slice a branch for review
+```
+
+Both flow through `plan-intake-review` and `plan-receive-review` identically. The discriminator matters at the boundary: `plan-intake-review` auto-forwards `type: code-review-slice` files to the code-review queue, because they do not belong here.
+
+A `type: reminder` document never enters this queue at all. Reminders are not reviewed — see `reminders-set`.
+
+If the plan being copied has no `type` field, treat it as `type: plan`.
+
 
 ## Plan File Locations
 
