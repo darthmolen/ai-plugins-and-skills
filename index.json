@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-06T12:26:47Z",
+  "generated": "2026-09-08T13:49:08Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -308,6 +308,33 @@
       "order": null
     },
     {
+      "name": "plan-clear-blockers",
+      "folder": "plan-clear-blockers",
+      "path": "skills/plan-clear-blockers",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Turns planning/blocked/ into an agenda for a session that could actually clear it. Use when something is briefly available \u2014 a device, an environment, an hour with the one person who can decide, a maintenance window \u2014 and the question is \"what do I do with it?\". Groups by blocker rather than by plan, orders the work inside each group, cites where each step is already specified, and names what each one unblocks.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "plan-record-review",
+      "folder": "plan-record-review",
+      "path": "skills/plan-record-review",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Records what a plan review actually decided \u2014 accepted, merged, rejected, flagged \u2014 so the reasoning outlives the conversation. Use immediately after evaluating a review with plan-receive-review, before moving on. Closes the gap where a review is acted on and nothing in the repository says which findings were taken or why the others were not.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "plan-sweep-blockers",
+      "folder": "plan-sweep-blockers",
+      "path": "skills/plan-sweep-blockers",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Finds plans that are stuck, records what they are stuck on, moves them to planning/blocked/, and files a reminder for each blocker something outside the repository has to clear. Use when the in-progress column no longer answers \"what is actually running\" \u2014 when a plan has not moved in a while, when a status section contradicts its own frontmatter, or before scheduling, so that the schedule reads a board that is telling the truth.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
       "name": "plan-workflow",
       "folder": "plan-workflow",
       "path": "skills/plan-workflow",
@@ -331,6 +358,15 @@
       "path": "skills/prompt-dotnet",
       "plugin": "ai-plugins-and-skills",
       "description": "Composes and executes a standardized, spec-driven, test-first .NET feature prompt. Invoke as /prompt-dotnet followed by the feature description. Chains spec-tier (stakes tiering + review gates), test-filter-development (RED-GREEN-REFACTOR with captured failure output and a seeded mutant), and csharp-quality-developer; if the harness lacks those skills, the inlined discipline is the contract. Oriented to ASP.NET Core services/APIs (the integration test uses WebApplicationFactory). Use when implementing a .NET feature and you want tiered spec depth, an evidenced test filter, and mandatory review.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "reminders-set",
+      "folder": "reminders-set",
+      "path": "skills/reminders-set",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Records a task a person must actively do, which no test or gate can catch. Use when a plan names work that needs a human, a machine, a conversation or a calendar \u2014 a check on hardware nobody on the team owns, a decision only one role can take, something to raise at the next session \u2014 and the plan alone would leave it to memory. Sits beside plan-workflow; it never schedules work, it remembers the work software cannot verify.",
       "category": "workflow-composers",
       "order": null
     },
