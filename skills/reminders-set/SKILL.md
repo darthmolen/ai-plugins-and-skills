@@ -172,6 +172,22 @@ is one — point its close-label setting at whatever field this contract uses, s
 button writes and what the validator reads are the same thing. Machines read these files as well
 as people, which is why the label is fixed rather than free prose.
 
+## Asking to be reminded
+
+A reminder in a directory reminds nobody. Where
+[`reminders-set-outlook`](../../apps/reminders-set-outlook/) runs, every reminder becomes a
+Microsoft To Do task, and two optional frontmatter keys shape it:
+
+```yaml
+remind: 2026-10-01 09:30   # an alert: a date (alerts at 09:00) or a date and local time
+due: 2026-10-03            # a due date on the task
+```
+
+Add `remind:` only when the reminder has a real moment — the day before the session, the
+morning the window opens. An alert on every reminder is noise that teaches people to dismiss
+alerts. Closing the reminder (`status: done` or `dropped`) completes the task and silences the
+alert; nothing else is needed.
+
 ## Checking the board
 
 ```bash

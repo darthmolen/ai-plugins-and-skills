@@ -1,0 +1,5 @@
+# C# sources use CRLF in the working tree on every platform, per csharp-quality-developer.
+*.cs     text eol=crlf
+*.csproj text eol=crlf
+*.props  text eol=crlf
+*.slnx   text eol=crlf

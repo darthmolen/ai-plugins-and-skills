@@ -1,0 +1,27 @@
+root = true
+
+[*]
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,csx}]
+indent_size = 4
+end_of_line = crlf
+charset = utf-8
+
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_style_qualification_for_field = true:warning
+dotnet_style_qualification_for_property = true:warning
+dotnet_style_qualification_for_method = true:warning
+dotnet_style_qualification_for_event = true:warning
+csharp_new_line_before_open_brace = all
+dotnet_sort_system_directives_first = true
+
+# The header is present on every file; SA1633's exact-text match is suppressed, as the skill describes.
+dotnet_diagnostic.SA1633.severity = none
+# Tests read better as sentences.
+dotnet_diagnostic.CA1707.severity = none
+
+[*.{json,xml,csproj,props,slnx}]
+indent_size = 2
