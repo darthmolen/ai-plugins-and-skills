@@ -143,6 +143,13 @@ Start at [curriculum-orchestrate](plugins/curriculum/skills/curriculum-orchestra
 | [curriculum-orchestrate](plugins/curriculum/skills/curriculum-orchestrate/) | Use when generating or refreshing course curriculum from source repositories — turning documentat... |
 <!-- END SKILLS: curriculum -->
 
+## Apps
+
+Programs that run on your machine and act on what the skills leave behind — see
+[apps/](apps/README.md). [reminders-set-outlook](apps/reminders-set-outlook/) turns the files
+[reminders-set](skills/reminders-set/) writes into Microsoft To Do tasks, so a reminder
+actually reminds you.
+
 ## Contributing
 
 See [HOW-TO-DEV.md](documentation/HOW-TO-DEV.md) for development setup and contribution workflow.

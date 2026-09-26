@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RemindersSetOutlook/RemindersSetOutlook.csproj" />
+  <Project Path="RemindersSetOutlook.Tests/RemindersSetOutlook.Tests.csproj" />
+</Solution>
