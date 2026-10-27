@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-27T00:39:41Z",
+  "generated": "2026-10-27T00:39:49Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -267,7 +267,7 @@
       "folder": "codebase-mapper",
       "path": "skills/codebase-mapper",
       "plugin": "ai-plugins-and-skills",
-      "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Outputs a token-efficient structure section for CLAUDE.md. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
+      "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Writes the map to documentation/CODEBASE-MAP.md and a short pointer to it in CLAUDE.md, so the map is read on demand instead of loaded every session. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
       "category": "tools",
       "order": 1
     },

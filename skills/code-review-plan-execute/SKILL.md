@@ -24,31 +24,39 @@ Second punch-in command. Orchestrates the full review pipeline: pre-flight → s
 Search order:
 
 ```bash
-# 1. Adversarially-reviewed meta-plans
-ls planning/needs-review/completed/*.md
+# 1. Self-reviewed meta-plans
+find planning/ -name "*.md" -not -path "*/needs-review/*"
 # filter to those with frontmatter type: code-review-plan
 
-# 2. Self-reviewed meta-plans
-find planning/ -name "*.md" -not -path "*/needs-review/*"
+# 2. Adversarially-reviewed meta-plans
+ls planning/needs-review/completed/*.md
 # filter to those with frontmatter type: code-review-plan
 ```
 
+**Why self-reviewed comes first.** The meta-plan the author wrote and checked names the major
+cases: the slices, focus areas and design intents that matter most for this branch. The
+adversarially reviewed copy is the one that went through the long cross-review, and that review
+mostly adds edge cases. When the reviewer got that copy first, it followed it to the letter and
+went looking for edge cases before the major ones. With the self-reviewed plan first, the
+reviewer covers the major cases before anything else. The adversarial copy is the fallback, and
+its findings should already have gone back into the source through `plan-receive-review`.
+
 Match logic:
-- **Exactly one in `completed/`:** before settling on it, check Source-vs-Audit (below). Otherwise confirm with user "Execute on `<title>` from `<path>`?".
-- **Multiple in `completed/`:** list them, ask user to pick. Then run Source-vs-Audit on the chosen one.
-- **Zero in `completed/`, exactly one in `planning/`:** "No adversarially-reviewed meta-plan found. Found `<path>` in `planning/` (not adversarially reviewed). Execute anyway? [y/N]".
-- **Zero in `completed/`, multiple in `planning/`:** list, ask user to pick (with same not-adversarially-reviewed warning).
+- **Exactly one in `planning/`:** check Source-vs-Audit (below), then confirm with the user: "Execute on `<title>` from `<path>`?".
+- **Multiple in `planning/`:** list them, ask the user to pick. Then run Source-vs-Audit on the chosen one.
+- **Zero in `planning/`, exactly one in `completed/`:** "No self-reviewed meta-plan found in `planning/`. Found adversarially-reviewed `<path>`. Its review findings may not have been folded back into a source plan. Execute anyway? [y/N]".
+- **Zero in `planning/`, multiple in `completed/`:** list them, ask the user to pick (with the same warning).
 - **Zero anywhere:** bail with "No `type: code-review-plan` document found. Run `code-review-plan-create` first."
 
 #### Source-vs-Audit resolution
 
-When a candidate is in `completed/`, also check whether a same-slug, same-`type: code-review-plan` file exists at the source location (`planning/<filename>`). If yes, diff them:
+When the chosen candidate is in `planning/`, also check whether a same-slug, same-`type: code-review-plan` audit copy exists in `planning/needs-review/completed/`. If one does, diff them:
 
-- **Identical:** use the `completed/` copy. Normal case.
-- **Different:** the source has post-review revisions (per `plan-receive-review`'s "audit copy stays untouched; revisions go to source" rule). Prefer the **source**, surface a one-line diff summary to the user (e.g. "Source has 6 changes vs audit copy: Slice 05 path corrected, design intents added to slices 03/04/06, dependency table, ..."), and confirm:
-  > "Use revised source `<path>`? Audit copy is unchanged at `<completed/path>`. [y/N]"
+- **No audit copy:** the plan was never sent for adversarial review. Use the source.
+- **Identical:** use the source. The review changed nothing.
+- **Different:** the source has post-review revisions (per `plan-receive-review`'s "audit copy stays untouched; revisions go to source" rule). Use the **source**, and show the user a one-line diff summary so they can see what the revisions changed (e.g. "Source has 6 changes vs audit copy: Slice 05 path corrected, design intents added to slices 03/04/06, dependency table, ...").
 
-This keeps `plan-receive-review`'s audit-trail discipline intact while letting execute run against the actionable post-revision version.
+The audit copy is never edited and never executed while a source exists. `plan-receive-review` keeps its audit trail, and execute runs against the plan the author checked.
 
 ### Step 2: Pre-Flight
 
@@ -85,6 +93,10 @@ Stream chat output:
 
 Read all slice specs across `needs-review/`, `in-progress/`, `reviewed/`, `completed/` matching the meta-plan's `slug`. Process each by status:
 
+Slices are independent by construction: each has its own SHA range, each reviewer only reads
+(`git diff base..head`), and each writes only its own slice file. So the loop runs in two passes.
+First it sorts every slice by status. Then it dispatches all the queued slices at once (Step 4a).
+
 ```
 For each slice in (numerical order from meta-plan):
 
@@ -101,36 +113,54 @@ For each slice in (numerical order from meta-plan):
                         - skip:   leave alone, surface in summary
         ≤ 30 minutes  → assume sibling executor; skip silently
     case queued:
-      → process this slice (Step 4a)
+      → add to the dispatch set (Step 4a)
 ```
 
-#### Step 4a: Process a Queued Slice
+#### Step 4a: Dispatch the Queued Slices in Parallel
 
 ```
-1. Move file to in-progress/:
+1. Claim every slice in the dispatch set before dispatching any of them:
    mv planning/code-reviews/needs-review/<file> planning/code-reviews/needs-review/in-progress/<file>
-
-2. Update frontmatter:
    status: reviewing
    status_updated: <ISO 8601 now>
    status_note: ""
 
-3. Dispatch the reviewer by invoking code-intake-review's logic for this single
-   file (the intake skill handles subagent dispatch + finding append + status
-   transition to reviewed | failed).
+2. Dispatch one reviewer per slice, all at once (in Claude Code: one message
+   with one Agent call per slice). Each reviewer is a superpowers:code-reviewer
+   subagent given code-intake-review/code-reviewer.md with its placeholders
+   filled (code-intake-review Step 5). Reviewers are read-only: they return
+   the review as text and never touch the slice file. If the host caps
+   concurrent subagents, dispatch in batches of that size. Do not fall back
+   to one at a time.
 
-4. After code-intake-review returns:
-   - On success:  file is in reviewed/ with status: reviewed
-                  → continue to next slice
-   - On failure:  file is in in-progress/ with status: failed
-                  → collect for summary, continue to next slice
+3. As each reviewer returns, the main thread writes that slice, one slice at
+   a time:
+   - On success:  append the review (code-intake-review Step 6 format),
+                  move to reviewed/, set status: reviewed
+                  (code-intake-review Step 7)
+   - On failure:  leave in in-progress/, set status: failed with a
+                  status_note → collect for summary.
+                  One failure never cancels the others.
 ```
 
-Stream chat updates per slice:
+**The main thread is the only thing that writes to slice files.** It does the claim before
+dispatch and the append, move and status change after each reviewer returns. Do not have the
+reviewers run code-intake-review's full logic. That logic claims, appends and moves the file
+itself, so a reviewer writing a slice file while the main thread is editing it locks the file,
+and the review fails. Parallelism belongs to the reviewing. Writes to slice files stay serial, in
+one thread.
 
-- `Slice <NN>/<total> — <name> — reviewing...`
-- `Slice <NN>/<total> — <name> — reviewed (C/I/M: a/b/c) — <verdict>`
-- `Slice <NN>/<total> — <name> — FAILED: <reason> — continuing`
+Claiming every slice first matters too. If execute crashes mid-dispatch, every claimed slice is
+in `in-progress/` with `status: reviewing`, and the stale-run check in Step 4 recovers it on the
+next run.
+
+Stream chat updates:
+
+- After dispatch: `Dispatched <N> slice reviews in parallel: <NN>, <NN>, ...`
+- As each reviewer returns (in completion order, one whole line per slice so parallel output
+  never interleaves):
+  - `Slice <NN>/<total> — <name> — reviewed (C/I/M: a/b/c) — <verdict>`
+  - `Slice <NN>/<total> — <name> — FAILED: <reason>`
 
 ### Step 5: Synthesis Checkpoint
 
@@ -147,8 +177,16 @@ Findings totals (from reviewed slices):
   Important:  <i>
   Minor:      <m>
 
+Stopping rules tripped (from the meta-plan):
+  <e.g. "Slice 01 has 4 Critical findings (threshold 3)" or "none">
+
 Run synthesis now? [y/N/skip]
 ```
+
+The meta-plan's stopping rules (for example, ≥3 Critical findings in one slice, or >2 failed
+slices) are checked here, after all slices have come back, not between slices. Because the reviews
+run in parallel, nothing is lost by checking them late. When a rule has tripped, say so above the
+prompt so the user can decide whether synthesis is still worth running.
 
 - **y:** invoke `code-synthesize-reviews` → produces `planning/code-reviews/SYNTHESIS.md`. Report path + open-finding totals.
 - **N or skip:** stop here, leave a chat note: "Synthesis skipped. Run `code-synthesize-reviews` later when you're ready."
@@ -191,7 +229,7 @@ If any slice failed, surface the per-slice reasons in the summary — the user n
 - Skip the synthesis checkpoint.
 - Auto-retry `failed` slices without user direction.
 - Re-seed a slice that already has `parent_plan` matching this meta-plan (that's a duplication bug).
-- Bail mid-loop on a single slice failure — continue and surface in summary.
+- Cancel the other reviewers when one slice fails — let them finish and surface the failure in the summary.
 - Touch the meta-plan file (read-only).
 
 ## Red Flags
@@ -201,4 +239,6 @@ If any slice failed, surface the per-slice reasons in the summary — the user n
 | "Just retry the failed slice automatically" | The reason matters. Surface it; let the user decide. |
 | "Skip pre-flight, I trust the meta-plan" | Branch could have been force-pushed. Verify SHAs every run. |
 | "Auto-synthesize after the loop, save a step" | The checkpoint catches degenerate runs. Always confirm. |
-| "Process slices in parallel for speed" | Sequential keeps chat output legible and avoids subagent collision. |
+| "Process slices one at a time to be safe" | Slices are independent SHA ranges with read-only reviewers and one output file each. Nothing is shared, so there is nothing to collide on. Dispatch them together. |
+| "Let each reviewer update its own slice status" | Two writers on one file lock it. Reviewers return text. The main thread does every claim, append, move and status change. |
+| "Dispatch as each slice is claimed, it's faster" | Claim every slice first. A crash mid-dispatch must leave every slice recoverable by the stale-run check. |
