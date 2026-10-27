@@ -58,6 +58,7 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 | [ace-fca-workflow](skills/ace-fca-workflow/) | Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks |
 | [azure-servicebus-operations](skills/azure-servicebus-operations/) | Use when peeking, draining, snapshotting metrics on, enumerating, or otherwise inspecting/manipul... |
 | [bulk-rename](skills/bulk-rename/) | Use when a refactor needs the same identifier rename applied across many files (type-cluster rena... |
+| [mutation-harness](skills/mutation-harness/) | Use when seeding a mutant to check whether a test suite actually detects a wrong answer — the MUT... |
 | [psql-query](skills/psql-query/) | Use when running ad-hoc read-only SQL against Azure Database for PostgreSQL — exploring tables, s... |
 | [sql-query](skills/sql-query/) | Use when running ad-hoc read-only T-SQL against Azure SQL — exploring Query Store, sampling table... |
 <!-- END SKILLS: tools -->

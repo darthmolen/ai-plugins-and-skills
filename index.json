@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-27T00:38:40Z",
+  "generated": "2026-10-27T00:38:47Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -286,6 +286,15 @@
       "path": "skills/bulk-rename",
       "plugin": "ai-plugins-and-skills",
       "description": "Use when a refactor needs the same identifier rename applied across many files (type-cluster renames, magic-string vocabulary moves) \u2014 runs a single bash invocation that does longest-first, word-boundary safe replacements across all tracked files in scope, instead of issuing dozens of per-file Edit tool calls",
+      "category": "tools",
+      "order": null
+    },
+    {
+      "name": "mutation-harness",
+      "folder": "mutation-harness",
+      "path": "skills/mutation-harness",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when seeding a mutant to check whether a test suite actually detects a wrong answer \u2014 the MUTATE step of test-filter-development. Seeds one fault, runs any test command, reports which tests died, and always reverts byte-for-byte, including on Ctrl-C or timeout. Inverts the usual exit code, because a mutant nothing kills is a failure. Framework-agnostic via --test-cmd, so it works for .NET, Node, Python or anything else that exits non-zero on failure.",
       "category": "tools",
       "order": null
     },
