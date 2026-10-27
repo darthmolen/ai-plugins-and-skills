@@ -51,8 +51,8 @@ better answer, and this directory is for the cases where it genuinely is not ava
 `planning/reminders/<category>_<slug>_<YYYY-MM-DD>.md`
 
 The category prefix stays part of the document's name. `plan-writing-syntax` strips only
-`feature_`, `promoted_` and `closed_` when resolving a reference, because those are the parts
-that change with status — a reminder's `verify_` or `follow-up_` does not.
+`feature_` and `stub_` when resolving a reference, because those name a document's *kind* — a
+reminder's `verify_` or `follow-up_` is a category, and categories are part of the name.
 
 ```markdown
 ---
@@ -178,7 +178,7 @@ as people, which is why the label is fixed rather than free prose.
 grep -l "^status: open" planning/reminders/*.md        # what is outstanding
 grep -H "^audience:" planning/reminders/*.md           # what needs whom
 grep -rl "^plan: <plan-name>$" planning/reminders/     # what a given plan left behind
-npm run validate:plans                                 # where the repository defines it
 ```
 
-Where a validator exists it is the authority, not this page.
+These greps are a quick eyeball. `plan-doc.cs validate`, which ships with `plan-workflow`, is the
+check and the authority — not this page.

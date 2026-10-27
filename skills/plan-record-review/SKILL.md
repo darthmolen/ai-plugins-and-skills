@@ -55,10 +55,10 @@ and is unaltered.*
 <A paragraph per rejection, with the evidence. Then anything flagged, and how it was ruled.>
 ```
 
-Set the review document's own `status: done` in the same edit. `plan-writing-syntax` gives a
-`review` two statuses, `open` and `done`, and a review that has been dispositioned is done —
-leaving it `open` means the board still shows a review awaiting an author who has already
-answered it.
+The review document's `status:` is already `done`: `plan-receive-review` set it when it filed the
+copy in `completed/`. Check it rather than set it. A copy still `open` in `completed/` predates that
+step; set it to `done` in this edit. `plan-writing-syntax` gives a `review` two statuses, `open` and
+`done`, and an open review in `completed/` fails validation.
 
 **This does not violate the audit trail.** That rule protects the reviewer's *words* from
 alteration — never edit a finding, never delete one, never soften one. Appending an attributed

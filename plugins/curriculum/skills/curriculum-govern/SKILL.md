@@ -26,7 +26,8 @@ That failure class is yours:
 
 | Gate | What you are actually checking |
 |---|---|
-| `claims_supported` | Open the cited source. Does it say what the course claims? This is the DATA-201 class. |
+| `claims_supported` | Open the cited source. Does it say what the course claims? This is the DATA-201 class. **The mechanical half is now a script** — run `check-quotations.ps1` (it ships beside this skill) from the workspace root first (exit 0 required); it proves every `[S]` quotation and every YAML `quote:` is verbatim. What is left for you is the half no regex reaches: whether the passage it matched actually supports the claim built on it. |
+| `prose_style` | Run `check-prose.ps1` from the `technical-writing` skill over the rendered artifacts. An error is a rejection. Then read for what it cannot see: a heading that does not say what its section contains, and a paragraph, pull quote or summary that restates an earlier one. Each restatement is a finding with both locations. |
 | `proposals_labeled` | Is invented instructional content marked `proposed_instructional`, or laundered as source-derived? |
 | `contradictions_resolved_or_disclosed` | Two sources disagreeing, presented as one settled fact |
 | `deprecated_sources_handled` | Teaching from `planning/not-implemented/`, or a `[REASONED]` claim presented as `[VERIFIED]` |

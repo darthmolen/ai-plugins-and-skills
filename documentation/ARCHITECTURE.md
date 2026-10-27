@@ -40,8 +40,11 @@ Skills are platform-agnostic. Any tool implementing the Agent Skills specificati
 |---------|-------------|-------------|-----------------|
 | Skills (SKILL.md) | Yes | Yes | Yes |
 | Slash commands | Yes | No | No |
+| Agents (`agents/*.md`) | Yes | No | No |
 | Plugin system | Yes (marketplace) | Yes (marketplace) | No (skills only) |
 | Auto-invocation | Yes | Yes | Yes |
+
+Agents are Claude Code only. The two in `agents/` (`wave-lead`, `wave-track`) are thin wrappers that preload skills and point at `wave-workflow`'s `lead.md` / `track.md`; in Copilot the same roles start from the skill with `lead` or `track <name>` as its argument.
 
 ## Directory Structure
 
@@ -108,6 +111,8 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── python-quality-install/
     │   └── SKILL.md
+    ├── technical-writing/
+    │   └── SKILL.md
     ├── plan-send-review/
     │   └── SKILL.md
     ├── plan-intake-review/
@@ -136,9 +141,13 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── bulk-rename/
     │   └── SKILL.md
+    ├── mutation-harness/
+    │   └── SKILL.md
     ├── psql-query/
     │   └── SKILL.md
     ├── sql-query/
+    │   └── SKILL.md
+    ├── brown-bag/
     │   └── SKILL.md
     ├── plan-clear-blockers/
     │   └── SKILL.md
@@ -156,7 +165,11 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── spec-tier/
     │   └── SKILL.md
-    └── test-filter-development/
+    ├── system-spec/
+    │   └── SKILL.md
+    ├── test-filter-development/
+    │   └── SKILL.md
+    └── wave-workflow/
         └── SKILL.md
 ```
 

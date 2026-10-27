@@ -50,7 +50,6 @@ sensitive_allowlist:
   # Documentation that legitimately shows the shape of a secret without being one.
   - 'AZURE_CLIENT_SECRET'              # named as a variable in secrets-hygiene guidance
   - '<entra-app-client-id>'            # placeholder
-  - 'kv-delta-'                        # Key Vault names are not secrets
 
 publication:
   requires_status: approved

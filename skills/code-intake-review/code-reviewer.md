@@ -12,6 +12,11 @@ You are reviewing a slice of a development branch for code quality, plan fidelit
 7. **For each finding, verify Status at HEAD** — read the file at HEAD and check whether the issue still applies. A later commit on the branch may have already resolved what was introduced earlier in this slice.
 8. Assess whether the slice is ready to merge.
 
+**You are read-only.** Do not edit, move or write any file, including the slice spec. Return
+your review as your final message. The dispatcher appends it to the slice spec and updates the
+spec's status. If you write to the spec while the dispatcher is updating it, the file locks and
+the review fails.
+
 ## Slice Being Reviewed
 
 - **Title:** `{SLICE_TITLE}`

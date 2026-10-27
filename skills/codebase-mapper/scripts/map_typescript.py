@@ -434,7 +434,7 @@ def format_output(files: list[FileInfo], root: Path, frameworks: list[str]) -> s
     dir_files: dict[str, list[FileInfo]] = defaultdict(list)
     for f in files:
         rel_path = Path(f.path).relative_to(root)
-        dir_name = str(rel_path.parent) if rel_path.parent != Path('.') else ''
+        dir_name = rel_path.parent.as_posix() if rel_path.parent != Path('.') else ''
         dir_files[dir_name].append(f)
 
     for dir_name in sorted(dir_files.keys()):

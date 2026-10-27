@@ -51,6 +51,8 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 2. [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed — or any other credential source [`DefaultAzureCredential`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential) will pick up
 3. Authenticated via `az login`
 
+The Azure steps apply only to the Azure tools. [mutation-harness](skills/mutation-harness/) needs only the SDK: it seeds one fault, runs any test command, reports which tests caught it and always reverts — the MUTATE step of test-filter-development.
+
 <!-- SKILLS: tools -->
 | Skill | Description |
 |-------|-------------|
@@ -58,6 +60,7 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 | [ace-fca-workflow](skills/ace-fca-workflow/) | Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks |
 | [azure-servicebus-operations](skills/azure-servicebus-operations/) | Use when peeking, draining, snapshotting metrics on, enumerating, or otherwise inspecting/manipul... |
 | [bulk-rename](skills/bulk-rename/) | Use when a refactor needs the same identifier rename applied across many files (type-cluster rena... |
+| [mutation-harness](skills/mutation-harness/) | Use when seeding a mutant to check whether a test suite actually detects a wrong answer — the MUT... |
 | [psql-query](skills/psql-query/) | Use when running ad-hoc read-only SQL against Azure Database for PostgreSQL — exploring tables, s... |
 | [sql-query](skills/sql-query/) | Use when running ad-hoc read-only T-SQL against Azure SQL — exploring Query Store, sampling table... |
 <!-- END SKILLS: tools -->
@@ -66,7 +69,7 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 
 <!-- write category flavor text here; the table below is auto-generated -->
 
-Plenty of general-purpose language helpers exist already, so no need to duplicate. These are about keeping and enforcing standards. If you already lean on [EditorConfig](https://editorconfig.org/) and [StyleCop](https://github.com/DotNetAnalyzers/StyleCopAnalyzers) for your C# work, the csharp skill slots in naturally. The Python skill bakes in the usual suspects — [ruff](https://docs.astral.sh/ruff/), [pyright](https://microsoft.github.io/pyright/), pre-commit hooks — for enforcing good script hygiene.
+Plenty of general-purpose language helpers exist already, so no need to duplicate. These are about keeping and enforcing standards. If you already lean on [EditorConfig](https://editorconfig.org/) and [StyleCop](https://github.com/DotNetAnalyzers/StyleCopAnalyzers) for your C# work, the csharp skill slots in naturally. The Python skill bakes in the usual suspects — [ruff](https://docs.astral.sh/ruff/), [pyright](https://microsoft.github.io/pyright/), pre-commit hooks — for enforcing good script hygiene. The C# skill now ships `normalize-cs.cs`, which makes its whitespace and line-ending rules checkable. [technical-writing](skills/technical-writing/) applies the same idea to prose — docs, READMEs, plans, PR descriptions — with `check-prose.ps1` to catch teaser headings, slogans and restated sections.
 
 <!-- SKILLS: language-helpers -->
 | Skill | Description |
@@ -74,6 +77,7 @@ Plenty of general-purpose language helpers exist already, so no need to duplicat
 | [csharp-quality-developer](skills/csharp-quality-developer/) | Enforce C# coding standards including StyleCop rules (SA1028, SA1518, SA1101, etc.), file formatt... |
 | [python-quality-developer](skills/python-quality-developer/) | Enforce Python coding standards including ruff rules, pyright type safety, avoiding Any, consiste... |
 | [python-quality-install](skills/python-quality-install/) | Use when initializing a new Python project or adding quality tooling to an existing one - sets up... |
+| [technical-writing](skills/technical-writing/) | Use when writing or editing prose someone else will read — documentation, READMEs, ADRs, plans, s... |
 <!-- END SKILLS: language-helpers -->
 
 ### Workflow Composers
@@ -84,9 +88,12 @@ Where the review helpers above handle one review, these decide how much process 
 
 Four more keep the board honest once work is underway: [plan-sweep-blockers](skills/plan-sweep-blockers/) moves plans that have quietly stalled out of the in-progress column and records what each one is waiting on, [plan-clear-blockers](skills/plan-clear-blockers/) turns that blocked column into an agenda for the hour when the scarce device, environment or person is finally available, [reminders-set](skills/reminders-set/) files the tasks a person must actually do — the ones no test or gate will ever catch — and [plan-record-review](skills/plan-record-review/) writes down what a review decided once you have evaluated it, so the rejections survive the conversation that produced them.
 
+Three skills cover three scales, and each works without the others: [system-spec](skills/system-spec/) is the product — one evergreen spec per area that plans cite feature by feature in `delivers:`; [plan-workflow](skills/plan-workflow/) is one piece of work, now with `scripts/plan-doc.cs` to validate the board and make a move-plus-status-change one step; and [wave-workflow](skills/wave-workflow/) runs several plans in parallel on separate tracks under one lead session, with `wave-lead` and `wave-track` agents to start them in Claude Code. [brown-bag](skills/brown-bag/) turns existing documentation into a talk: outline, slide outline and participant material.
+
 <!-- SKILLS: workflow-composers -->
 | Skill | Description |
 |-------|-------------|
+| [brown-bag](skills/brown-bag/) | Use when someone wants to give a talk, brown bag, lunch-and-learn or internal presentation from e... |
 | [plan-clear-blockers](skills/plan-clear-blockers/) | Turns planning/blocked/ into an agenda for a session that could actually clear it |
 | [plan-record-review](skills/plan-record-review/) | Records what a plan review actually decided — accepted, merged, rejected, flagged — so the reason... |
 | [plan-sweep-blockers](skills/plan-sweep-blockers/) | Finds plans that are stuck, records what they are stuck on, moves them to planning/blocked/, and ... |
@@ -95,7 +102,9 @@ Four more keep the board honest once work is underway: [plan-sweep-blockers](ski
 | [prompt-dotnet](skills/prompt-dotnet/) | Composes and executes a standardized, spec-driven, test-first .NET feature prompt |
 | [reminders-set](skills/reminders-set/) | Records a task a person must actively do, which no test or gate can catch |
 | [spec-tier](skills/spec-tier/) | Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, revi... |
+| [system-spec](skills/system-spec/) | Use when writing or editing a system spec — the document under docs/specs/ that describes the tar... |
 | [test-filter-development](skills/test-filter-development/) | Use when implementing any feature or bugfix with AI assistance, before writing implementation code |
+| [wave-workflow](skills/wave-workflow/) | Use when several plans need to run in parallel across tracks under one lead session — setting up ... |
 <!-- END SKILLS: workflow-composers -->
 
 ### Domain Skills
