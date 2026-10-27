@@ -156,6 +156,8 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── spec-tier/
     │   └── SKILL.md
+    ├── system-spec/
+    │   └── SKILL.md
     └── test-filter-development/
         └── SKILL.md
 ```

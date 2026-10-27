@@ -7,6 +7,9 @@ metadata:
 
 # Plan Workflow
 
+**A plan is one piece of work.** The spec it delivers (`system-spec`) is the map, and a wave
+(`wave-workflow`) runs several plans in parallel. Each can be used on its own or with the others.
+
 This skill is the base layer of all spec-driven work. It governs how planning documents move through the kanban directories at `planning/` — whether you are working solo (simple spec-driven) or feeding into the adversarial review pipeline (complex spec-driven). Every layer of the workflow builds on top of this one; the kanban and commit discipline here apply regardless of which path you are on.
 
 The two layers:
@@ -20,21 +23,36 @@ The two layers:
 
 ```
 planning/
+├── backlog/           # Deferred: nobody has committed to this yet
 ├── (root)             # Queued: written, ready to start, nobody has started it
 ├── in-progress/       # Executing — one per track (see Parallel Tracks)
 ├── completed/         # Finished, with a ## Status block
 ├── not-implemented/   # Ended without being built — the second terminal state
 ├── blocked/           # Cannot proceed until something outside the repository clears
-├── backlog/           # Stubs: discovered work needing its own planning session
 ├── reminders/         # Tasks a person must do; completed/ underneath
-├── waves/             # Scheduling documents across many plans
+├── waves/             # Scheduling documents across many plans, and the waves' context; one folder per wave allowed
 ├── evidence/          # Artifacts a plan produced and its Status block cites
 └── needs-review/      # The review pipeline's copies — never the plan of record
 ```
 
+The first six are **the board**, and they hold plans and stubs alike. **A stub is a baby plan**
+(`plan-writing-syntax`): named differently so you can
+tell them apart at a glance, but moving through the same columns under the same rules. The folders
+are status buckets — they say *what happened to the document*, never *what kind of document it is*.
+
+So `backlog/` does not mean "where stubs live". It means **deferred**, and a plan that was worked
+and then outranked belongs there exactly as much as an idea captured mid-session does. Before
+stubs became baby plans, such a plan went back to the queue root, where it was a permanent false positive on "what
+is ready to start".
+
+The last four are not the board. A reminder is work for a *person*; a `needs-review/` copy is
+explicitly never the document of record; a wave schedules across many plans rather than being
+scheduled itself; `evidence/` holds artifacts, not documents. They are different kinds of thing,
+not lifecycle states, which is why they keep their own vocabularies.
+
 Every directory is committed to source control. **No document is ever deleted — only moved.**
 
-That rule has been broken once, and it is worth knowing how: a stub was deleted when its plan was promoted, which left the plan pointing at a file that did not exist. Nobody noticed for a week. Promotion is not deletion — mark the stub `promoted` and leave it where it is.
+That rule has been broken once, and it is worth knowing how: a stub was deleted when its plan was promoted, which left the plan pointing at a file that did not exist. Nobody noticed for a week. Promotion is not deletion — move the stub to `completed/` and let it stand as the record of when the problem was first seen.
 
 ### `not-implemented/` — the second terminal state
 
@@ -69,6 +87,8 @@ Did plan mode just produce a new plan?
           ├─ Execution finished successfully →
           │    1. Append a ## Status section to the document (see template below).
           │    2. Move the document from planning/in-progress/ to planning/completed/.
+          │    3. If it has delivers:, set each feature it names to Shipped or
+          │       Shipped interim in the spec, and run spec-table --fix (system-spec).
           │
           ├─ Execution interrupted / not completed →
           │    1. Append a ## Status section noting where work stopped.
@@ -84,8 +104,13 @@ Did plan mode just produce a new plan?
           │    1. Record what is being waited on, by name.
           │    2. Move the document to planning/blocked/.
           │
+          ├─ Worked, but something else now outranks it →
+          │    1. Append a ## Status section saying where work stopped.
+          │    2. Add a Trigger for Promotion: what should pull it back.
+          │    3. Move the document to planning/backlog/.
+          │
           └─ Item discovered during planning, outside current scope →
-               Write a new document to planning/backlog/ (see Backlog section).
+               Write a new stub to planning/backlog/ (see Backlog section).
 ```
 
 **Every one of those moves changes the `status:` field too.** See *The directory is the status* above.
@@ -94,17 +119,34 @@ Did plan mode just produce a new plan?
 
 ## File Naming
 
-Use the format: `feature_<name>_<YYYY-MM-DD>.md`
+**The prefix carries `kind`:** `stub_<name>_<YYYY-MM-DD>.md` for a stub, and one of three for a plan:
 
-Examples:
-- `planning/feature_auth-refactor_2026-06-22.md`
-- `planning/in-progress/feature_auth-refactor_2026-06-22.md`
-- `planning/completed/feature_auth-refactor_2026-06-22.md`
-- `planning/backlog/feature_session-token-storage_2026-06-22.md`
+| Plan prefix | For | Name (what references use) |
+|---|---|---|
+| `feature_<name>_<YYYY-MM-DD>.md` | new behaviour | `<name>_<YYYY-MM-DD>` |
+| `bug_<name>_<YYYY-MM-DD>.md` | a fix | `<name>_<YYYY-MM-DD>` |
+| `wave-<n>_<track>[-<name>]_<YYYY-MM-DD>.md` | a track's plan in wave *n* (`wave-workflow`) | the whole filename minus `.md` |
 
-**Keep the same filename as the document moves between directories.** The name is the document's identity and the directory is its status, which is what lets another document reference it by name and go on resolving after it moves.
+```
+planning/backlog/stub_session-token-storage_2026-06-22.md   # an idea, deferred
+planning/feature_auth-refactor_2026-06-22.md                # queued
+planning/in-progress/feature_auth-refactor_2026-06-22.md    # running
+planning/completed/feature_auth-refactor_2026-06-22.md      # shipped
+planning/completed/stub_session-token-storage_2026-06-22.md # promoted
+planning/bug_token-expiry-off-by-one_2026-06-23.md          # a fix, queued
+planning/wave-1_read_2026-10-26.md                          # wave 1's read track
+```
 
-The one exception is a **backlog stub**, whose prefix carries its status: `feature_` while open, `promoted_` once a plan grew out of it, `closed_` when it ended. Those are renames, and the prefix has to agree with the `status:` field.
+`wave-<n>_` stays in the name, so every reference to the plan says which wave it belongs to, and a wave's plans sort together in whichever directory they sit. The validator reports `UNKNOWN-WAVE` when `waves/wave-<n>/` holds no `kind: wave` document.
+
+**The filename never changes.** Not when the document moves, not when it is promoted — kind does not change, so neither does the prefix. The name is the document's identity and the directory is its status, which is what lets another document reference it by name and go on resolving after it moves.
+
+The prefix used to carry *status* (`feature_` → `promoted_` → `closed_`), which renamed the file on every move. That is retired: `kind:` was already doing the job, and a filename that changes is drift waiting to happen.
+
+Two rules, deliberately not symmetric:
+
+- **A stub must carry `stub_`.** It shares every directory with plans now, so the prefix is the only thing distinguishing the two at a glance.
+- **A plan need not carry `feature_`, `bug_` or `wave-<n>_`.** A missing prefix is a lost affordance, not a lie — documents predating the convention read fine without it, and renaming a completed document to satisfy a new rule is what *the name is the identity* forbids. A prefix belonging to *another* kind is always an error.
 
 ---
 
@@ -195,7 +237,7 @@ Minimum content for a backlog stub:
 ```markdown
 ---
 kind: stub
-status: open
+status: backlog
 date: YYYY-MM-DD
 ---
 
@@ -213,19 +255,30 @@ What is understood so far. Leave blank if unknown.
 What event or decision should pull this into active planning.
 ```
 
-Backlog items stay in `planning/backlog/` until a future session explicitly promotes them: read the stub, expand it into a full plan document, and put **the plan** in `planning/` (queued) or `planning/in-progress/` (immediate start).
+Three fields and nothing else is required, on purpose: **capture has to stay cheap or ideas go uncaptured.**
 
-**Promotion does not move or delete the stub.** It stays in `backlog/`, renamed to `promoted_`, with `status: promoted` and a `promoted_to:` naming the plan it became. The stub is the record of when the problem was first seen; the plan is the record of what was done about it, and they are different facts.
+Stubs stay in `planning/backlog/` until a future session promotes them: read the stub, write the plan — from the harness planning document, not by growing the stub — and put **the plan** in `planning/` (queued) or `planning/in-progress/` (immediate start).
 
-A stub that ends without becoming a plan is renamed `closed_` with `status: closed`, and says what closed it.
+**Promotion does not delete the stub, and it produces two documents.** The stub is the record of when the problem was first seen; the plan is the record of what was done about it, and they are different facts.
+
+| the stub's fate | status | directory | says |
+|---|---|---|---|
+| a plan grew out of it | `completed` | `planning/completed/` | `completed:`, optionally `promoted_to:` |
+| it turned out to be a bad idea | `not-implemented` | `planning/not-implemented/` | `reason:` and what that reason names |
+
+**Promotion *is* a stub's completion.** Its job was to hold the idea until someone committed to it, and being promoted is that job finished. `not-implemented/` is for a document whose idea went nowhere; filing every successful stub there would drown the directory whose whole value is that a rejected approach stays findable.
+
+The cost, stated plainly: `completed/` now holds both shipped plans and promoted stubs. Count by kind — `grep -l "^kind: plan" planning/completed/*.md` — rather than by directory.
+
+**A stub is not confined to those two endings.** It can be `queued`, it can be `blocked`, and if someone works a baby plan directly it takes a track in `in-progress/` and ships like anything else. Nothing is illegal for a stub.
 
 ---
 
 ## Parallel Tracks
 
-`in-progress/` holds **one plan per track**, not one plan overall. A track is a
-concurrency slot — a channel of work with a single executor — and every plan declares
-which one it runs on:
+`in-progress/` holds **one document per track**, not one overall. A track is a
+concurrency slot — a channel of work with a single executor — and everything in
+`in-progress/` declares which one it runs on, a stub being worked directly included:
 
 ```yaml
 track: main
@@ -241,18 +294,20 @@ another resumes the same plan — so an agent id in this field goes stale the mo
 agent does. A stable slug (`engine`, `content-areas`, `infra`) survives handoff and
 still discriminates cleanly.
 
-### Admitting a plan to a track
+### Admitting a document to a track
 
-A plan may move into `in-progress/` when both hold:
+A plan — or a stub being worked directly — may move into `in-progress/` when both hold:
 
 1. **The track is free.** No other document in `in-progress/` declares the same track.
 2. **Its file set is disjoint.** Its `## Files Expected to Change` list shares no path
-   with any other in-progress plan's list.
+   with any other in-progress document's list.
 
 Rule 2 is the one that actually protects the work. The track field is bookkeeping; two
 agents editing the same file is the failure it exists to prevent. If the file sets
-overlap, the plans are not independent — queue the second one in `planning/` instead of
-splitting it across tracks.
+overlap, the two are not independent. With two or three plans, queue the second in
+`planning/` instead of splitting it across tracks. With more, write a wave
+(`wave-workflow`): it keeps the sets disjoint by naming an owner for the shared file,
+splitting it per track, or running the change as a gate first.
 
 ```bash
 # What is running, and where
@@ -261,9 +316,14 @@ grep -H "^track:" planning/in-progress/*.md
 # Does the file set collide with anything already running?
 grep -hA20 "## Files Expected to Change" planning/in-progress/*.md | grep "^- "
 
-# Where a validator exists, it parses this rather than grepping it
-npm run validate:plans
+The greps above are a quick eyeball. **The check is `scripts/plan-doc.cs validate`**, which parses
+`track:` and the file-set lists rather than grepping them, and reports both collisions by name:
+
+```powershell
+dotnet run "$plan\plan-doc.cs" -- validate --path planning
 ```
+
+It is the authority where it and this page disagree — read its source and fix the page.
 
 ### Committing from a track
 
@@ -303,6 +363,79 @@ When used without the review pipeline, move directly from `planning/` to `planni
 
 ---
 
+## The scripts
+
+The skill ships `scripts/plan-doc.cs`, one file with three verbs, sharing one reading of the
+frontmatter contract on purpose — `close` prevents one class of status/directory drift and
+`validate` reports every class, so they must not disagree about what the contract says.
+`spec-table` generates a system spec's status table (see `system-spec`); it lives here because
+resolving a plan's `delivers:` needs plans and specs read by the same parser.
+
+```powershell
+# Set once per session — works whether installed via plugin or as a user skill
+$plan = if ($env:CLAUDE_PLUGIN_ROOT) {
+  "$env:CLAUDE_PLUGIN_ROOT\skills\plan-workflow\scripts"
+} else {
+  "$HOME\.claude\skills\plan-workflow\scripts"
+}
+
+# Report every contract violation across the board; exit 1 on any
+dotnet run "$plan\plan-doc.cs" -- validate --path planning
+
+# Make the move atomic: rewrite status: AND git mv, or do neither
+dotnet run "$plan\plan-doc.cs" -- close --doc planning/in-progress/feature_x_2026-09-14.md `
+    --to completed --status-block ./statusblock.md
+
+dotnet run "$plan\plan-doc.cs" -- close --doc <path> --to blocked --blocked-on "the thing being waited on"
+dotnet run "$plan\plan-doc.cs" -- close --doc <path> --to not-implemented `
+    --reason superseded --reason-target some-other-plan_2026-09-14
+
+# Promoting a stub is closing it to completed. The filename does not change.
+dotnet run "$plan\plan-doc.cs" -- close --doc planning/backlog/stub_an-idea_2026-09-10.md `
+    --to completed --promoted-to the-plan-it-became_2026-09-16 `
+    --decided-by "A Name" --decided-on 2026-09-16
+
+# System specs (system-spec): check plans' delivers: against the specs, and the specs themselves
+dotnet run "$plan\plan-doc.cs" -- validate --path planning --specs docs
+
+# Regenerate each spec's status table from its feature lines and the plans that deliver them
+dotnet run "$plan\plan-doc.cs" -- spec-table --specs docs --path planning --fix
+
+dotnet run "$plan\plan-doc.cs" -- --selftest    # 186-case battery; exit 0 iff all pass
+```
+
+`--dry-run` prints the new frontmatter and the destination without touching anything.
+
+### What `close` refuses
+
+Each refusal is a document that would otherwise lie about itself:
+
+- a status whose required field is missing (`completed` without `completed:`, `blocked` without
+  `blocked_on:`, `not-implemented` without `reason:` **and** the field that reason must name)
+- a `--decided-on` that is not ISO `YYYY-MM-DD`
+- a `--reason-target` shaped like a path rather than a name
+- a document that already carries a `## Status` section — it would append a second
+- a document whose `status:` and directory **already** disagree; something upstream is broken and
+  this is not the tool to paper over it
+
+### The `git add` that looks redundant and is not
+
+`close` runs `git add` on the destination after `git mv`. That is load-bearing: **`git mv` stages
+the rename from the blob already in the index**, so the frontmatter rewrite — a working-tree change
+never added — is left unstaged, and the commit moves the file while committing its *old* content.
+Observed for real: a document landed in `completed/` still saying `status: in-progress`, which is
+the precise drift this script exists to prevent, shipped by the script's own move.
+
+That line is covered by `test/Invoke-CloseIntegrationCheck.ps1`, not by `--selftest`. It is a property
+of the git index, which no pure battery reaches — and a mutant deleting the `git add` **survived**
+the battery, which under `test-filter-development` rejects the test rather than the mutant.
+
+```powershell
+.\test\Invoke-CloseIntegrationCheck.ps1     # 24 checks against a throwaway repo, exit 0 required
+```
+
+PowerShell 7, matching the other PowerShell checks in this collection — not bash, so it runs on Windows without Git Bash and on Linux and macOS alike.
+
 ## Commit Checkpoints
 
 Commit the plan document at each state transition:
@@ -323,10 +456,10 @@ Example: `[FEATURE] auth-refactor phase 1 complete — JWT validation extracted`
 
 ## Guardrails
 
-- **One active plan per track** in `planning/in-progress/`. Most work is `track: main`, so most of the time this reads as one active plan. If a second plan must start urgently on a track that is already busy, move the current plan back to `planning/` with a status note first.
-- **Tracks must be independent.** A plan only earns a track of its own if its `Files Expected to Change` set is disjoint from every other in-progress plan's. Overlapping plans queue; they do not parallelise.
+- **One active document per track** in `planning/in-progress/`. Most work is `track: main`, so most of the time this reads as one active plan. If something must start urgently on a track that is already busy, move the current document back to `planning/` with a status note first.
+- **Tracks must be independent.** A document only earns a track of its own if its `Files Expected to Change` set is disjoint from every other in-progress document's. Overlapping work queues, or a wave resolves the overlap (`wave-workflow`); it never runs in parallel as is.
 - **Never delete plan documents.** Move them; the history is the corpus. **Promotion is not deletion** — deleting a stub on promotion is how one plan came to point at a file that did not exist.
-- **A move is two edits.** `git mv`, and the `status:` field. One without the other is exactly the drift the field was introduced to end.
-- **Backlog is not a graveyard.** Each stub should have a `Trigger for Promotion` — if it will never be acted on, close it with a reason rather than leaving it open forever.
+- **A move is two edits.** `git mv`, and the `status:` field. One without the other is exactly the drift the field was introduced to end. It is never three: the filename does not change.
+- **Backlog is not a graveyard.** Each stub should have a `Trigger for Promotion` — if it will never be acted on, move it to `not-implemented/` with a reason rather than leaving it deferred forever.
 - **All directories are source-controlled.** Add `.gitkeep` files if directories would otherwise be empty.
 - **`needs-review/` never holds the plan of record.** Its contents are copies for the review pipeline; the plan itself stays on the board.

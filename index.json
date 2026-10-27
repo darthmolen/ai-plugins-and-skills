@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-08T15:31:26Z",
+  "generated": "2026-10-27T00:38:08Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -376,6 +376,15 @@
       "path": "skills/spec-tier",
       "plugin": "ai-plugins-and-skills",
       "description": "Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, review gates, and calibration. Use when starting any plan or spec, deciding how much detail a plan needs, onboarding developers to the planning standard, or when unsure whether a spec is over- or under-specified. Invoke BEFORE plan-workflow so it sets the depth plan-workflow then produces.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "system-spec",
+      "folder": "system-spec",
+      "path": "skills/system-spec",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when writing or editing a system spec \u2014 the document under docs/specs/ that describes the target system for an area \u2014 or when scoping a release out of one. Owns the spec format \u2014 frontmatter, one evergreen spec per area that is never trimmed or copied per release, a feature line and status on each feature section, interim blocks for reduced deliveries, change kinds and the subset rule, and a status table generated from the sections and the plans that deliver each feature. Pairs with plan-workflow, whose plans cite features in delivers:.",
       "category": "workflow-composers",
       "order": null
     },
