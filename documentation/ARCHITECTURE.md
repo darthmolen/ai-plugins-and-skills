@@ -136,6 +136,8 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── bulk-rename/
     │   └── SKILL.md
+    ├── mutation-harness/
+    │   └── SKILL.md
     ├── psql-query/
     │   └── SKILL.md
     ├── sql-query/

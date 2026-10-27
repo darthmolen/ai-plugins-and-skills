@@ -77,7 +77,44 @@ Two rejection edges, not one. `verify_red → red` catches a test that cannot de
 `killed → red` catches a test that cannot detect *wrong*. **They are different faults and the first
 check does not find the second.**
 
+And there is a third fault that neither edge sees: **right, and too much.** Asked to delete one
+user's PII, `TRUNCATE TABLE Users` fails RED, passes GREEN, and kills a boundary mutant — the PII
+*is* gone. Only a test that asserts **what survived** can reject it, and only the author can say
+what that is. See [Before RED — ask what must survive](#before-red--ask-what-must-survive).
+
 ---
+
+## Before RED — Ask What Must Survive
+
+**The frame is not yours to choose.** A test for an operation that changes state has two halves:
+what must become true, and what must *remain* true — the frame. The spec usually states the
+first. The second is a decision about the business, and an agent that settles it alone has
+invented the oracle.
+
+**Trigger** — the code under test writes or deletes state that outlives the process: rows, files,
+blobs, queue messages, cache entries, anything another caller will read later.
+
+**Then:**
+
+1. Look for the frame in the spec. If it says what must survive, use it; do not ask again.
+2. If it does not, **stop and ask the author** before writing the test:
+
+   > *This changes persistent state. What must be unchanged afterwards?* — and name the readings
+   > you can see, e.g. *keep the row and blank the PII columns, or remove the row? Other users'
+   > rows untouched? Other tenants? Rows in other tables that reference it?*
+
+3. Record the answer beside the RED output. *"Nothing — wiping it is the point"* is a legitimate
+   answer; recorded, it is a frame.
+
+**The tell that you are about to skip this:** you have noticed two reasonable readings of what
+survives and picked one. Noting the choice in your report afterwards is not the same thing — by
+then the tests encode it, and they pass under the reading you rejected as easily as under the one
+you kept.
+
+This is the backstop, not the primary control. A spec written to
+[SPEC-DRIVEN-CODE-WORKFLOW §2](../../documentation/workflows/SPEC-DRIVEN-CODE-WORKFLOW.md#2-write-the-spec)
+already answers it. The argument in full:
+[why mutations — the frame](why-mutations-for-test-driven-development.md).
 
 ## RED — Write One Failing Test
 
@@ -117,6 +154,37 @@ test('retry works', async () => {
 Vague name, and it asserts on the mock — so it measures your test setup, not the retry logic.
 </Bad>
 
+For an operation that changes state, the same test has to pin its frame.
+
+<Good>
+```python
+def test_erasure_clears_pii_and_nothing_else():
+    target = add_user(conn, "Ada", "ada@example.com", "555-0100", tenant_id=1)
+    other = add_user(conn, "Grace", "grace@example.com", "555-0199", tenant_id=1)
+    before = snapshot(conn)
+
+    delete_user_pii(conn, target)
+
+    # what became true
+    assert pii_of(conn, target) == (None, None, None)
+    # the frame, as the author stated it: the row stays, and nobody else is touched
+    assert row_count(conn) == len(before)
+    assert non_pii_of(conn, target) == non_pii(before, target)
+    assert row_of(conn, other) == row(before, other)
+```
+`TRUNCATE`, a dropped `WHERE`, and a row delete all fail it — including the ones nobody thought of.
+</Good>
+
+<Bad>
+```python
+def test_erasure_clears_pii():
+    target = add_user(conn, "Ada", "ada@example.com", "555-0100", tenant_id=1)
+    delete_user_pii(conn, target)
+    assert find_by_email(conn, "ada@example.com") is None
+```
+True after `TRUNCATE TABLE Users`. Asserts the necessary condition and treats it as sufficient.
+</Bad>
+
 **Requirements:**
 - One behavior
 - Clear name
@@ -124,6 +192,9 @@ Vague name, and it asserts on the mock — so it measures your test setup, not t
   every mock costs you something specific)
 - **You can name the change to production code that would make it fail.** If you cannot, the test is
   already hollow and no later step will save it.
+- **State changes pin their frame as a property, never as a mechanism.** Assert *other rows
+  unchanged*, not *no `TRUNCATE` was issued*. The second is a blocklist — it catches only the
+  mistake somebody already thought of — and it couples the test to the SQL.
 
 ## Verify RED — Capture the Failure, Do Not Attest It
 
@@ -218,7 +289,21 @@ introduce a wrong answer on purpose.
 ```
 
 Seconds to run, fully deterministic, and it catches the entire class of defect RED structurally
-cannot see. Per-language recipes and the restore checklist: [`seeding-mutants.md`](seeding-mutants.md).
+cannot see.
+
+**When a frame was stated, one mutant must attack it: widen the scope.** Drop the `WHERE`, remove
+the tenant predicate, delete the `userId` filter. If no test dies, the suite does not constrain the
+blast radius, whatever the author told you. Per-language recipes and the restore checklist: [`seeding-mutants.md`](seeding-mutants.md).
+
+**Steps 1-5 are mechanical — use the `mutation-harness` skill rather than doing them by hand.** It
+seeds, runs any `--test-cmd`, reports which tests died, and reverts byte-for-byte in a `finally` and
+on Ctrl-C. Step 4 is the one with nothing binding it when done by hand: a run interrupted between
+seed and revert leaves a deliberate bug in the tree, and the next commit ships it.
+
+It also inverts the exit code so a surviving mutant is a failing command (`0` killed, `1` survived),
+and reports a mutant that did not compile, a suite that timed out, and a test command that never
+launched or executed zero tests, as **inconclusive** rather than as a kill — because a command that
+never ran has proven nothing.
 
 ### Rejection on survival
 
@@ -236,10 +321,15 @@ Mutant survived  →  the test does not test the behavior it claims to
 argument. A surviving mutant is a demonstration that the behavior can break with your suite green,
 and you have just performed it.
 
-### Mutation is a filter, never a score
+### Mutation is a filter and a measure — never a target
 
 > Treat mutation as a **filter** — *does this test kill this specific seeded fault, yes or no* — and
 > never as a percentage to optimize toward.
+
+Measuring it to *learn* something is a third use and is legitimate: mutation score is a better
+instrument than coverage for judging AI-written tests, and there is now evidence for that
+specifically. What is rejected is making the number a **target**. The distinction is
+measure-versus-target, not measurement-versus-filter.
 
 Binary and per-mutant, or not at all. This is not a stylistic preference:
 
@@ -349,6 +439,7 @@ cannot re-run), *deleting hours of work is wasteful* (sunk cost; unverified code
 | Quality | Good | Bad |
 |---|---|---|
 | **Detects something** | You can name the mutant it kills | Nothing you could break would fail it |
+| **Pins its frame** | A state change asserts what survived, as the author stated it | Asserts only what changed |
 | **Minimal** | One thing. "and" in the name? Split it. | `test('validates email and domain and whitespace')` |
 | **Clear** | The name states the behavior | `test('test1')` |
 | **Shows intent** | Demonstrates the desired API | Obscures what the code should do |
@@ -395,6 +486,7 @@ the failure mode this skill is named after.
 | 6 | A mutant was seeded and killed | the mutant described, and the red run it caused |
 | 7 | The mutant is gone | `git diff` clean on the mutated file |
 | 8 | Composition is covered | an integration test that does not mock the wiring |
+| 9 | State changes pin their frame | the frame — quoted from the spec, or the author's answer to the question — its survival assertion, and the widen-scope mutant's red run |
 
 Cannot produce the evidence for a box? Then that box is unchecked, whatever you believe about it.
 
