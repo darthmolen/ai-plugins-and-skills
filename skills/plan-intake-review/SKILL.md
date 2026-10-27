@@ -57,6 +57,9 @@ mv planning/needs-review/<file>.md planning/needs-review/in-progress/<file>.md
 
 **This move MUST happen BEFORE any review processing begins.** This prevents a second agent from picking up the same file.
 
+The frontmatter stays `kind: review`, `status: open` through `in-progress/` and `reviewed/`; the
+validator accepts an open review in all three queue folders.
+
 ### Step 4: Dispatch Plan Reviewer
 
 Dispatch a `superpowers:code-reviewer` subagent using the template at `plan-intake-review/plan-reviewer.md`.

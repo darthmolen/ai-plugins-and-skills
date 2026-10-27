@@ -95,6 +95,7 @@ Four more keep the board honest once work is underway: [plan-sweep-blockers](ski
 | [prompt-dotnet](skills/prompt-dotnet/) | Composes and executes a standardized, spec-driven, test-first .NET feature prompt |
 | [reminders-set](skills/reminders-set/) | Records a task a person must actively do, which no test or gate can catch |
 | [spec-tier](skills/spec-tier/) | Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, revi... |
+| [system-spec](skills/system-spec/) | Use when writing or editing a system spec — the document under docs/specs/ that describes the tar... |
 | [test-filter-development](skills/test-filter-development/) | Use when implementing any feature or bugfix with AI assistance, before writing implementation code |
 <!-- END SKILLS: workflow-composers -->
 

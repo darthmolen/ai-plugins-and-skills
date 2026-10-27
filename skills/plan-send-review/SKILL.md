@@ -82,6 +82,22 @@ cp <source-plan> planning/needs-review/YYYY-MM-DD-slug.md
 
 **Copy, not move.** The original plan stays in place. The author continues working with their copy.
 
+Then replace the copy's frontmatter block, and leave its body alone. A copy is a review, not a
+second plan of record, and `plan-doc.cs validate` fails a `kind: plan` document in `needs-review/`:
+
+```yaml
+---
+kind: review
+status: open
+date: YYYY-MM-DD            # today
+reviews: <plan name>        # the plan's filename minus feature_/stub_ and .md
+type: plan                  # keep the original type:, if it had one
+---
+```
+
+`reviews:` is a name, never a path, and is checked like any other reference. Omit it for a plan that
+has no file under `planning/` yet, such as a session plan in `~/.claude/plans/`.
+
 ### Step 4: Confirm
 
 Report to the user:
@@ -93,4 +109,4 @@ Report to the user:
 
 - Move the original plan (copy only)
 - Send plans that are clearly incomplete (no tasks, no architecture section) without warning the user
-- Modify the plan content during copy
+- Modify the plan's body during copy. Only the frontmatter block changes.

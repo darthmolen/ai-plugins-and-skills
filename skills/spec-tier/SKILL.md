@@ -44,8 +44,9 @@ Rate each factor Low / Med / High:
 - **All factors Low** → **LOW**.
 - **Otherwise** → **MEDIUM**.
 
-State the score and the resulting tier at the top of the plan. That one line is the audit trail for why
-the plan is as deep (or as light) as it is.
+Record the tier in the plan's frontmatter as `tier: low`, `tier: medium` or `tier: high`
+(`plan-writing-syntax`; `plan-doc.cs validate` rejects any other value). Put the factor scores at the
+top of the body. They are the audit trail for why the plan is as deep (or as light) as it is.
 
 ## Step 2 — Produce to the tier
 
@@ -57,8 +58,8 @@ the plan is as deep (or as light) as it is.
 
 **HIGH spec anatomy** (the mechanics live in `plan-workflow` / `writing-plans` — that skill is
 authoritative; this is the checklist to hit):
-1. **Frontmatter** — `type/status/author/supersedes` + parent links (finding/slice/meta-plan); status
-   encodes state (`ready-for-execution`, `revised-post-review`).
+1. **Frontmatter**: the `plan-writing-syntax` block, with `tier: high`, `author:`, and `repo:` when
+   the code lives in another repository.
 2. **Code-grounded throughout** — `file.cs:line` anchors, "verified against source," and *real* code
    (signatures, jsonc schemas), never pseudocode.
 3. **Decisions *locked* with rationale** — mark author-overrides vs defaults; justify what's *dropped*
@@ -85,6 +86,20 @@ without re-deriving, reasoning preserved so it can be reviewed and defended.
 Same-model review is theater — it shares the author's blind spots by construction. The independent gate
 must run on a *different* model. Where the spec is lighter (Low→Medium→High spec effort decreases per
 reader capability), the review requirement *increases* to hold total safety constant.
+
+## Plans that deliver system-spec features
+
+Where the repository has a system spec (`system-spec`), the tier adds these obligations:
+
+| Tier | Obligation |
+|---|---|
+| **Low** | None. A Low plan that changes a spec feature is under-tiered: a spec change has a reader beyond the author. |
+| **Medium** | `delivers:` names every spec feature the plan changes, and each one's status and interim block are set before execution starts. |
+| **High** | As Medium. Any `Migration` interim has its migration specified in the plan (what is converted, by what, when) and names the spec's `owner` as approver. The adversarial plan review checks the change kind against the subset rule. |
+
+A change kind is a claim about compatibility, and the cost of getting it wrong is data or callers
+broken when the target ships. That is why an unverified `Contract subset` on a public API or
+stored data routes the plan to High.
 
 ## Step 4 — Calibrate (close the loop, make tiering empirical)
 
@@ -120,6 +135,7 @@ reader already holds — that's dead weight; trim it. Everything else earns its 
   (captured RED output, and a seeded mutant after GREEN).
 - **`csharp-quality-developer`** — for any C# the plan drives (StyleCop, `this.`, LoggerMessage, CRLF).
 - **`plan-send-review`** — the adversarial plan gate (Medium recommended, High required).
+- **`system-spec`** — the spec a plan delivers from; the plan cites its features in `delivers:`.
 - **code-review workflow** — the adversarial caboose (Medium+ required).
 - **`prompt-dotnet`** already chains `using-superpowers → test-filter-development → csharp-quality-developer`;
   `spec-tier` sits in front of it to fix the depth and the review obligation before that chain runs.

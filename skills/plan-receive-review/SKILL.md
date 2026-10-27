@@ -29,7 +29,12 @@ ls planning/needs-review/reviewed/*.md 2>/dev/null | grep -v .gitkeep
 mv planning/needs-review/reviewed/<file>.md planning/needs-review/completed/<file>.md
 ```
 
-**Move BEFORE processing.** Prevents double-pickup. The completed copy is the audit trail — never modify it.
+In the same step, set the copy's `status: open` to `status: done`. A review in `completed/` is done,
+and the validator fails an open one there. A copy that predates `kind: review` gets the full block
+from `plan-send-review`.
+
+**Move BEFORE processing.** Prevents double-pickup. The completed copy is the audit trail — apart from
+that status line, never modify it.
 
 ### Step 3: Read the Review
 
