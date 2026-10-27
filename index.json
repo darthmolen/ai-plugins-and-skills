@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-27T00:38:08Z",
+  "generated": "2026-10-27T00:38:40Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -394,6 +394,15 @@
       "path": "skills/test-filter-development",
       "plugin": "ai-plugins-and-skills",
       "description": "Use when implementing any feature or bugfix with AI assistance, before writing implementation code. RED \u2192 GREEN \u2192 REFACTOR with the filter made load-bearing - captured failure output rather than attestation, a seeded mutant after GREEN, and rejection when the suite survives it. Use in place of test-driven-development, which names the ordering rather than the mechanism that carries the value.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "wave-workflow",
+      "folder": "wave-workflow",
+      "path": "skills/wave-workflow",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when several plans need to run in parallel across tracks under one lead session \u2014 setting up a wave, starting its lead and track sessions (`lead` or `track <name>` as arguments), deciding which files each track owns and what a track does when it needs another's file, running the wave (pause points, contracts that freeze on a named day, the lead pushing verified commits), the integration window, and closing it. Sits above plan-workflow; it schedules plans and never rewrites them.",
       "category": "workflow-composers",
       "order": null
     }

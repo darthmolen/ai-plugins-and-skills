@@ -97,6 +97,7 @@ Four more keep the board honest once work is underway: [plan-sweep-blockers](ski
 | [spec-tier](skills/spec-tier/) | Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, revi... |
 | [system-spec](skills/system-spec/) | Use when writing or editing a system spec — the document under docs/specs/ that describes the tar... |
 | [test-filter-development](skills/test-filter-development/) | Use when implementing any feature or bugfix with AI assistance, before writing implementation code |
+| [wave-workflow](skills/wave-workflow/) | Use when several plans need to run in parallel across tracks under one lead session — setting up ... |
 <!-- END SKILLS: workflow-composers -->
 
 ### Domain Skills
