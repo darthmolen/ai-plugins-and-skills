@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-27T00:38:47Z",
+  "generated": "2026-10-27T00:39:41Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -164,6 +164,15 @@
       "order": null
     },
     {
+      "name": "technical-writing",
+      "folder": "technical-writing",
+      "path": "skills/technical-writing",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when writing or editing prose someone else will read \u2014 documentation, READMEs, ADRs, plans, skill files, PR descriptions, curriculum artifacts \u2014 and when generated text reads like marketing copy, a feed post, or a sermon: teaser headings, \"not X, it is Y\" lines, bolded slogans, sections that restate the one above.",
+      "category": "language-helpers",
+      "order": null
+    },
+    {
       "name": "plan-send-review",
       "folder": "plan-send-review",
       "path": "skills/plan-send-review",
@@ -314,6 +323,15 @@
       "plugin": "ai-plugins-and-skills",
       "description": "Use when running ad-hoc read-only T-SQL against Azure SQL \u2014 exploring Query Store, sampling tables, inspecting DMVs, joining sys.* views, or producing JSON/CSV for an alerting pipeline. Read-only by construction (AST-validated, rolled-back transaction, no INSERT/UPDATE/DELETE/EXEC/OPENROWSET). Returns TOON by default for token-efficient consumption by Claude; --format=json|table|csv for other consumers.",
       "category": "tools",
+      "order": null
+    },
+    {
+      "name": "brown-bag",
+      "folder": "brown-bag",
+      "path": "skills/brown-bag",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when someone wants to give a talk, brown bag, lunch-and-learn or internal presentation from existing documentation \u2014 paths, links or files uploaded into the conversation. Interviews them about audience and goal (or continues from ideas already in the prompt), drafts a presentation outline, then derives a slide-deck outline and participant material from it, iterates until they approve, and hands the Markdown to the harness's PowerPoint and Word capability. Triggers on \"brown bag\", \"lunch and learn\", \"turn these docs into a talk\", \"I need slides for\", \"presentation from this documentation\".",
+      "category": "workflow-composers",
       "order": null
     },
     {

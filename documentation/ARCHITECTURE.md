@@ -108,6 +108,8 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── python-quality-install/
     │   └── SKILL.md
+    ├── technical-writing/
+    │   └── SKILL.md
     ├── plan-send-review/
     │   └── SKILL.md
     ├── plan-intake-review/
@@ -141,6 +143,8 @@ ai-plugins-and-skills/
     ├── psql-query/
     │   └── SKILL.md
     ├── sql-query/
+    │   └── SKILL.md
+    ├── brown-bag/
     │   └── SKILL.md
     ├── plan-clear-blockers/
     │   └── SKILL.md

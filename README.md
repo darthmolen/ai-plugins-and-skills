@@ -75,6 +75,7 @@ Plenty of general-purpose language helpers exist already, so no need to duplicat
 | [csharp-quality-developer](skills/csharp-quality-developer/) | Enforce C# coding standards including StyleCop rules (SA1028, SA1518, SA1101, etc.), file formatt... |
 | [python-quality-developer](skills/python-quality-developer/) | Enforce Python coding standards including ruff rules, pyright type safety, avoiding Any, consiste... |
 | [python-quality-install](skills/python-quality-install/) | Use when initializing a new Python project or adding quality tooling to an existing one - sets up... |
+| [technical-writing](skills/technical-writing/) | Use when writing or editing prose someone else will read — documentation, READMEs, ADRs, plans, s... |
 <!-- END SKILLS: language-helpers -->
 
 ### Workflow Composers
@@ -88,6 +89,7 @@ Four more keep the board honest once work is underway: [plan-sweep-blockers](ski
 <!-- SKILLS: workflow-composers -->
 | Skill | Description |
 |-------|-------------|
+| [brown-bag](skills/brown-bag/) | Use when someone wants to give a talk, brown bag, lunch-and-learn or internal presentation from e... |
 | [plan-clear-blockers](skills/plan-clear-blockers/) | Turns planning/blocked/ into an agenda for a session that could actually clear it |
 | [plan-record-review](skills/plan-record-review/) | Records what a plan review actually decided — accepted, merged, rejected, flagged — so the reason... |
 | [plan-sweep-blockers](skills/plan-sweep-blockers/) | Finds plans that are stuck, records what they are stuck on, moves them to planning/blocked/, and ... |
