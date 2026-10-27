@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-27T00:39:49Z",
+  "generated": "2026-10-27T00:39:54Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -42,7 +42,7 @@
       "folder": "curriculum-generate",
       "path": "plugins/curriculum/skills/curriculum-generate",
       "plugin": "curriculum",
-      "description": "Use when rendering approved course definitions into artifacts \u2014 student guide, instructor guide, labs, and quiz \u2014 with provenance metadata. Fifth stage of the curriculum pipeline, after curriculum-govern approves the definition. Slide generation is not implemented.",
+      "description": "Use when rendering approved course definitions into artifacts \u2014 student guide, instructor guide, slide outline, labs, and quiz \u2014 with provenance metadata. Fifth stage of the curriculum pipeline, after curriculum-govern approves the definition. Markdown is the version of record; final Office files are rendered in M365, and in-repo .docx/.pptx are optional.",
       "category": "curriculum",
       "order": null
     },
