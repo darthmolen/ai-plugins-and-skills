@@ -178,9 +178,12 @@ known plans and their state (clean / revised / drifted), any constraints.>
 ### Slice 02 — ...
 [same shape]
 
-## Review Order
+## Slice Dependencies
 
-Default: 01 → 02 → ... → N. Adjust if some slices logically must precede others.
+`code-review-plan-execute` reviews all slices in parallel, so this table does not set a review
+order. It records how the slices build on each other, so that synthesis and `code-review-apply`
+can triage the foundations first (for example, fix slice 01's state machine before the slices
+built on it).
 
 **When `slice_count > 1`, you MUST include a dependency table** instead of prose. Tables are scannable; prose dependency callouts get skimmed past. Example:
 
@@ -195,8 +198,10 @@ Every slice from 02 onward should have at least one dependency row — usually `
 
 ## Stopping rules
 
-- Pause after any slice that produces ≥3 Critical findings.
-- Pause if `code-review-plan-execute` reports >2 failed slices.
+Checked at execute's synthesis checkpoint, after every slice has come back:
+
+- Flag any slice that produces ≥3 Critical findings.
+- Flag the run if `code-review-plan-execute` reports >2 failed slices.
 - User may always interrupt and re-evaluate.
 
 ## Out of scope

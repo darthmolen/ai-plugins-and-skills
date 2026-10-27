@@ -24,7 +24,7 @@ Then create the task folder and investigate:
 
 Use subagents for exploration to keep context clean. Focus on understanding HOW the system works, not deciding WHAT to change yet.
 
-Output your findings to `planning/backlog/{task-name}/research.md` following the template structure.
+Output your findings to `planning/evidence/{task-name}/research.md` following the template structure.
 
 Be thorough but concise. Include file paths and line numbers. Note any conventions or patterns we should follow.
 ```
@@ -46,7 +46,7 @@ Focus specifically on:
 ## Planning Phase Prompt
 
 ```
-Based on the research in `planning/backlog/{task-name}/research.md`, create an implementation plan for [TASK].
+Based on the research in `planning/evidence/{task-name}/research.md`, create an implementation plan for [TASK].
 
 First, read the plan template at `references/plan-template.md` for the expected output structure.
 
@@ -70,7 +70,7 @@ Also include:
 - Rollback plan
 - Status tracking section
 
-Output to `planning/backlog/{task-name}/plan.md`. Be precise - this plan should be executable by someone who hasn't seen the research.
+Output to `planning/evidence/{task-name}/plan.md`. Be precise - this plan should be executable by someone who hasn't seen the research.
 
 After human review, the folder will be moved to `planning/in-progress/{task-name}/` to begin implementation.
 ```

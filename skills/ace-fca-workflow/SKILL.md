@@ -23,19 +23,21 @@ All artifacts are managed in a `planning/` folder with kanban-style subdirectori
 
 ```
 planning/
-├── backlog/           # Queued tasks with initial research/plans
-├── in-progress/       # Active work
+├── evidence/          # This skill's working folders — research.md, plan.md, status.md
 │   └── feature-name/
-│       ├── research.md
-│       ├── plan.md
-│       └── status.md
-└── completed/         # Finished work (reference for future tasks)
+├── backlog/           # Deferred: the stub or plan this work came from
+├── in-progress/       # The plan document, once execution starts
+└── completed/         # The plan document, once it ships
 ```
 
-**File movement:**
-1. New task → Create folder in `backlog/` with research.md
-2. Starting work → Move folder to `in-progress/`
-3. Work complete → Move folder to `completed/`
+**Why `evidence/` and not `backlog/`.** Every `*.md` under `planning/` carries the frontmatter
+contract, and `backlog/` now means a *status* — deferred — that any plan or stub may hold
+(`plan-writing-syntax`). A `{task-name}/` folder of research notes is neither. `planning/evidence/` is exempt
+from the contract by design: artifacts a plan produced and its Status block cites.
+
+**File movement:** the research and plan artifacts stay put in `planning/evidence/{task-name}/`
+for the life of the task and are cited by name. It is the **plan document** that moves through
+`planning/` → `in-progress/` → `completed/`, under `plan-workflow`.
 
 ## Workflow Overview
 
@@ -72,9 +74,9 @@ Each step produces a **compacted artifact** that feeds the next step with clean 
 **Process**:
 1. Start with a fresh context
 2. Read `references/research-template.md` for output structure
-3. Create task folder: `planning/backlog/{task-name}/`
+3. Create task folder: `planning/evidence/{task-name}/`
 4. Explore codebase structure, dependencies, and relevant files
-5. Write findings to `planning/backlog/{task-name}/research.md`
+5. Write findings to `planning/evidence/{task-name}/research.md`
 6. Human reviews research before proceeding
 
 **Key principles**:
@@ -91,12 +93,12 @@ Each step produces a **compacted artifact** that feeds the next step with clean 
 **Process**:
 1. Start with fresh context
 2. Read `references/plan-template.md` for output structure
-3. Load `planning/backlog/{task-name}/research.md` into context
+3. Load `planning/evidence/{task-name}/research.md` into context
 4. Design implementation approach based on research
 5. Break into discrete phases with verification steps
-6. Write plan to `planning/backlog/{task-name}/plan.md`
+6. Write plan to `planning/evidence/{task-name}/plan.md`
 7. Human reviews plan before proceeding
-8. Move folder to `planning/in-progress/{task-name}/` when ready to implement
+8. Write the plan document to `planning/in-progress/` when ready to implement, citing the artifacts by name
 
 **Key principles**:
 - Each phase should be independently verifiable
