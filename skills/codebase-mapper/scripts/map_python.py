@@ -206,7 +206,7 @@ def format_output(modules: dict[str, list[ModuleInfo]], root: Path, frameworks: 
     for path, mods in modules.items():
         for mod in mods:
             rel_path = Path(mod.path).relative_to(root)
-            dir_name = str(rel_path.parent) if rel_path.parent != Path('.') else ''
+            dir_name = rel_path.parent.as_posix() if rel_path.parent != Path('.') else ''
             dir_modules[dir_name].append(mod)
 
     # Sort directories

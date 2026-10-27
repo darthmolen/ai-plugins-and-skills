@@ -17,6 +17,10 @@ Before writing ANY code, remember these critical rules to avoid rework:
 - **Indentation**: Use 4 spaces (not tabs) for C# code
 - **Line Endings - Unix**: Use Unix LF (`\n`) for all .sh files
 
+**These four rules are enforceable — do not re-derive the check by hand.** The skill ships
+`scripts/normalize-cs.cs`, which is the authority for them. See
+[Checking and fixing the format rules](#checking-and-fixing-the-format-rules) below.
+
 ### 2. Common StyleCop Rules to Follow
 
 #### Most Frequently Violated Rules (Fix These First!)
@@ -342,12 +346,61 @@ this.logger.LogInformation("Application started"); // One-time or infrequent
 ```
 
 ### 6. Before Submitting Code
-1. Check for trailing spaces (especially after `;` or `}`)
-2. Verify file ends with single newline
-3. Ensure proper indentation (4 spaces)
-4. Verify all fields use `this.` qualification
-5. Check that readonly fields are marked as such
+
+**Run the format check first, before `dotnet build`.** Steps 1-3 below are mechanical and the
+script decides them in under a second; a build round-trip on a real solution is 30-60 seconds and
+tells you one finding at a time.
+
+```powershell
+dotnet run "$norm\normalize-cs.cs" -- --check --path ./src
+```
+
+1. ~~Check for trailing spaces~~ — `--check` (SA1028)
+2. ~~Verify file ends with single newline~~ — `--check` (SA1518)
+3. ~~Ensure proper indentation (4 spaces)~~ — `--check` (INDENT), plus CRLF line endings
+4. Verify all fields use `this.` qualification — by hand; the script does not parse code
+5. Check that readonly fields are marked as such — by hand
 6. Fix all compilation errors before addressing LoggerMessage warnings
+
+## Checking and fixing the format rules
+
+The skill ships `scripts/normalize-cs.cs`, a single-file C# script covering exactly the four rules
+in §1 — CRLF, SA1028, SA1518, and tab indentation — and **nothing else**.
+
+```powershell
+# Set once per session — works whether installed via plugin or as a user skill
+$norm = if ($env:CLAUDE_PLUGIN_ROOT) {
+  "$env:CLAUDE_PLUGIN_ROOT\skills\csharp-quality-developer\scripts"
+} else {
+  "$HOME\.claude\skills\csharp-quality-developer\scripts"
+}
+
+dotnet run "$norm\normalize-cs.cs" -- --check --path ./src      # report; exit 1 on any finding
+dotnet run "$norm\normalize-cs.cs" -- --fix   --path ./src      # rewrite in place
+dotnet run "$norm\normalize-cs.cs" -- --check --path ./src/Foo/Bar.cs
+dotnet run "$norm\normalize-cs.cs" -- --selftest                # 63-case battery; exit 0 iff all pass
+```
+
+The `--` is mandatory. `dotnet run` otherwise treats the following tokens as its own.
+
+`bin/`, `obj/`, `node_modules/`, `.git/` and `.vs/` are skipped.
+
+### Why this is not the `dotnet format` prohibition being walked back
+
+§"Quality Error Fix Strategy" forbids `dotnet format`, and that stands. The reasons given there are
+specific to a tool that **parses and rewrites code**: it strips project-specific usings and mis-handles
+source-generated `LoggerMessage` partials.
+
+`normalize-cs` never parses code. It touches whitespace and line endings, so none of those hazards
+apply to it. Its self-test asserts that non-whitespace content is preserved byte-for-byte, and the
+anchoring case that keeps it honest is in the battery: **a tab inside a string literal is not
+indentation and must not be flagged.**
+
+### What it deliberately does not do
+
+**BOM is not a rule here**, because §1 does not state one. A BOM is stripped for analysis and
+preserved as-is on `--fix`. If a no-BOM rule is wanted, add it to §1 first — a script must not
+enforce what its skill does not document.
 
 ### 7. Project-Specific Rules
 - Use `Microsoft.Identity.Client` for OAuth
@@ -438,6 +491,14 @@ Remember: **It's better to write code correctly the first time than to fix it la
 When encountering StyleCop or code quality errors during refactoring:
 
 ### Iteration Strategy:
+
+**Iteration 0**: run `normalize-cs --fix`. CRLF, SA1028, SA1518 and tab indentation are mechanical
+and should never consume one of the three manual iterations — in the session that motivated the
+script, that check was hand-rolled six times in a single branch.
+
+The budget below applies to what is left — the rules that need judgment (`this.` qualification,
+brace placement, missing usings, LoggerMessage partials):
+
 1. **Iteration 1**: Manually fix issues based on specific error messages
 2. **Iteration 2**: Try another round of manual fixes if needed
 3. **Iteration 3**: Final attempt at manual fixes

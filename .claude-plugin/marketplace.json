@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "ai-plugins-and-skills",
-      "description": "Cross-platform AI coding assistant skills following the Agent Skills specification: adversarial plan and code review workflows, curated tools, and language quality standards.",
-      "version": "1.4.1",
+      "description": "Cross-platform AI coding assistant skills following the Agent Skills specification: adversarial plan and code review workflows, specs, plans and parallel waves, curated tools, and language quality standards.",
+      "version": "1.5.0",
       "source": "./",
       "license": "BSD-2-Clause",
       "author": {
@@ -20,7 +20,7 @@
     {
       "name": "curriculum",
       "description": "A seven-stage pipeline that turns source documentation into course definitions and course artifacts. Install only if you have a curriculum workspace — it is inert otherwise.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "./plugins/curriculum",
       "license": "BSD-2-Clause",
       "author": {

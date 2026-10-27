@@ -66,6 +66,17 @@ ESLint |
 |---------|-------------|
 | N/A | N/A |
 
+### Agents
+
+The plugin ships two agents for [`wave-workflow`](../skills/wave-workflow/), which runs several plans in parallel under one lead session. Start each in its own terminal:
+
+```bash
+claude --agent ai-plugins-and-skills:wave-lead --name wave-<n>-lead
+claude --agent ai-plugins-and-skills:wave-track --name wave-<n>-<track>   # then say "track <track>"
+```
+
+In a VS Code extension tab, `/ai-plugins-and-skills:wave-workflow lead` (or `track <track>`) loads the same instructions; rename the session to match.
+
 ### C# Coding Standards
 
 The `csharp-quality-expert` skill enforces:

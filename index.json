@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-08T15:31:26Z",
+  "generated": "2026-10-27T00:39:54Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -42,7 +42,7 @@
       "folder": "curriculum-generate",
       "path": "plugins/curriculum/skills/curriculum-generate",
       "plugin": "curriculum",
-      "description": "Use when rendering approved course definitions into artifacts \u2014 student guide, instructor guide, labs, and quiz \u2014 with provenance metadata. Fifth stage of the curriculum pipeline, after curriculum-govern approves the definition. Slide generation is not implemented.",
+      "description": "Use when rendering approved course definitions into artifacts \u2014 student guide, instructor guide, slide outline, labs, and quiz \u2014 with provenance metadata. Fifth stage of the curriculum pipeline, after curriculum-govern approves the definition. Markdown is the version of record; final Office files are rendered in M365, and in-repo .docx/.pptx are optional.",
       "category": "curriculum",
       "order": null
     },
@@ -164,6 +164,15 @@
       "order": null
     },
     {
+      "name": "technical-writing",
+      "folder": "technical-writing",
+      "path": "skills/technical-writing",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when writing or editing prose someone else will read \u2014 documentation, READMEs, ADRs, plans, skill files, PR descriptions, curriculum artifacts \u2014 and when generated text reads like marketing copy, a feed post, or a sermon: teaser headings, \"not X, it is Y\" lines, bolded slogans, sections that restate the one above.",
+      "category": "language-helpers",
+      "order": null
+    },
+    {
       "name": "plan-send-review",
       "folder": "plan-send-review",
       "path": "skills/plan-send-review",
@@ -258,7 +267,7 @@
       "folder": "codebase-mapper",
       "path": "skills/codebase-mapper",
       "plugin": "ai-plugins-and-skills",
-      "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Outputs a token-efficient structure section for CLAUDE.md. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
+      "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Writes the map to documentation/CODEBASE-MAP.md and a short pointer to it in CLAUDE.md, so the map is read on demand instead of loaded every session. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
       "category": "tools",
       "order": 1
     },
@@ -290,6 +299,15 @@
       "order": null
     },
     {
+      "name": "mutation-harness",
+      "folder": "mutation-harness",
+      "path": "skills/mutation-harness",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when seeding a mutant to check whether a test suite actually detects a wrong answer \u2014 the MUTATE step of test-filter-development. Seeds one fault, runs any test command, reports which tests died, and always reverts byte-for-byte, including on Ctrl-C or timeout. Inverts the usual exit code, because a mutant nothing kills is a failure. Framework-agnostic via --test-cmd, so it works for .NET, Node, Python or anything else that exits non-zero on failure.",
+      "category": "tools",
+      "order": null
+    },
+    {
       "name": "psql-query",
       "folder": "psql-query",
       "path": "skills/psql-query",
@@ -305,6 +323,15 @@
       "plugin": "ai-plugins-and-skills",
       "description": "Use when running ad-hoc read-only T-SQL against Azure SQL \u2014 exploring Query Store, sampling tables, inspecting DMVs, joining sys.* views, or producing JSON/CSV for an alerting pipeline. Read-only by construction (AST-validated, rolled-back transaction, no INSERT/UPDATE/DELETE/EXEC/OPENROWSET). Returns TOON by default for token-efficient consumption by Claude; --format=json|table|csv for other consumers.",
       "category": "tools",
+      "order": null
+    },
+    {
+      "name": "brown-bag",
+      "folder": "brown-bag",
+      "path": "skills/brown-bag",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when someone wants to give a talk, brown bag, lunch-and-learn or internal presentation from existing documentation \u2014 paths, links or files uploaded into the conversation. Interviews them about audience and goal (or continues from ideas already in the prompt), drafts a presentation outline, then derives a slide-deck outline and participant material from it, iterates until they approve, and hands the Markdown to the harness's PowerPoint and Word capability. Triggers on \"brown bag\", \"lunch and learn\", \"turn these docs into a talk\", \"I need slides for\", \"presentation from this documentation\".",
+      "category": "workflow-composers",
       "order": null
     },
     {
@@ -380,11 +407,29 @@
       "order": null
     },
     {
+      "name": "system-spec",
+      "folder": "system-spec",
+      "path": "skills/system-spec",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when writing or editing a system spec \u2014 the document under docs/specs/ that describes the target system for an area \u2014 or when scoping a release out of one. Owns the spec format \u2014 frontmatter, one evergreen spec per area that is never trimmed or copied per release, a feature line and status on each feature section, interim blocks for reduced deliveries, change kinds and the subset rule, and a status table generated from the sections and the plans that deliver each feature. Pairs with plan-workflow, whose plans cite features in delivers:.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
       "name": "test-filter-development",
       "folder": "test-filter-development",
       "path": "skills/test-filter-development",
       "plugin": "ai-plugins-and-skills",
       "description": "Use when implementing any feature or bugfix with AI assistance, before writing implementation code. RED \u2192 GREEN \u2192 REFACTOR with the filter made load-bearing - captured failure output rather than attestation, a seeded mutant after GREEN, and rejection when the suite survives it. Use in place of test-driven-development, which names the ordering rather than the mechanism that carries the value.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "wave-workflow",
+      "folder": "wave-workflow",
+      "path": "skills/wave-workflow",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when several plans need to run in parallel across tracks under one lead session \u2014 setting up a wave, starting its lead and track sessions (`lead` or `track <name>` as arguments), deciding which files each track owns and what a track does when it needs another's file, running the wave (pause points, contracts that freeze on a named day, the lead pushing verified commits), the integration window, and closing it. Sits above plan-workflow; it schedules plans and never rewrites them.",
       "category": "workflow-composers",
       "order": null
     }

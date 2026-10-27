@@ -1,6 +1,6 @@
 ---
 name: codebase-mapper
-description: "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Outputs a token-efficient structure section for CLAUDE.md. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project."
+description: "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Writes the map to documentation/CODEBASE-MAP.md and a short pointer to it in CLAUDE.md, so the map is read on demand instead of loaded every session. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project."
 allowed-tools: Read Write Edit Bash Glob Grep
 metadata:
   category: tools
@@ -8,7 +8,7 @@ metadata:
 ---
 # Codebase Structure Mapper
 
-Deterministically parse Python, C#, and TypeScript codebases to extract structural maps (namespaces, classes, methods, inheritance, dependencies) and output a concise, token-efficient architecture section for CLAUDE.md.
+Deterministically parse Python, C#, and TypeScript codebases to extract structural maps (namespaces, classes, methods, inheritance, dependencies). The map is written to its own file; CLAUDE.md gets only a short pointer to it.
 
 ---
 
@@ -17,6 +17,7 @@ Deterministically parse Python, C#, and TypeScript codebases to extract structur
 - **Zero AI tokens for parsing** — Pure script execution using AST parsers
 - **Deterministic & repeatable** — Same code = same output, version-controllable
 - **Token-efficient output** — Compact format optimized for LLM consumption
+- **No per-session token tax** — CLAUDE.md is loaded into every session; the map is only read when someone needs to find where something lives
 - **Marker-based updates** — Preserves hand-written CLAUDE.md sections
 
 ---
@@ -27,8 +28,8 @@ Deterministically parse Python, C#, and TypeScript codebases to extract structur
 |-------|------|-------------|
 | 1 | DETECT | Auto-detect project languages and entry points |
 | 2 | PARSE | Run appropriate AST-based mapper scripts |
-| 3 | MERGE | Insert/update map in CLAUDE.md with markers |
-| 4 | REPORT | Display summary and token count |
+| 3 | MERGE | Write the map file; insert/update the pointer in CLAUDE.md with markers |
+| 4 | REPORT | Display summary and both token counts |
 
 ---
 
@@ -67,7 +68,7 @@ Run the appropriate mapper scripts based on detected languages.
 ### Python Projects
 
 ```bash
-python scripts/map_python.py --root ./src --output /tmp/map_python.md
+python scripts/map_python.py --root ./src --output $TMP/map_python.md
 ```
 
 **What it extracts:**
@@ -81,7 +82,7 @@ python scripts/map_python.py --root ./src --output /tmp/map_python.md
 ### C# Projects
 
 ```bash
-python scripts/map_csharp.py --root ./src --output /tmp/map_csharp.md
+python scripts/map_csharp.py --root ./src --output $TMP/map_csharp.md
 ```
 
 **What it extracts:**
@@ -95,7 +96,7 @@ python scripts/map_csharp.py --root ./src --output /tmp/map_csharp.md
 ### TypeScript Projects
 
 ```bash
-python scripts/map_typescript.py --root ./src --output /tmp/map_typescript.md
+python scripts/map_typescript.py --root ./src --output $TMP/map_typescript.md
 ```
 
 **What it extracts:**
@@ -110,13 +111,31 @@ python scripts/map_typescript.py --root ./src --output /tmp/map_typescript.md
 
 ## Phase 3: MERGE
 
-Use the update script to merge maps into CLAUDE.md:
+Use the update script to write the map file and point at it from CLAUDE.md:
 
 ```bash
 python scripts/update_claude_md.py \
   --claude-md ./CLAUDE.md \
-  --maps /tmp/map_python.md /tmp/map_csharp.md /tmp/map_typescript.md
+  --maps $TMP/map_python.md $TMP/map_csharp.md $TMP/map_typescript.md
 ```
+
+Use the session scratchpad (or any temp directory) for `$TMP`; the per-language maps are intermediates.
+
+### Where the map goes
+
+| Repo has | Map file |
+|----------|----------|
+| `documentation/` (with or without `docs/`) | `documentation/CODEBASE-MAP.md` |
+| only `docs/` | `docs/CODEBASE-MAP.md` |
+| neither | `documentation/CODEBASE-MAP.md` (folder created) |
+
+Override with `--map-file <path>`. The repo root is the directory holding CLAUDE.md. Commit the map file — the output is deterministic, so diffs show structural change.
+
+### Why a pointer, not the map
+
+CLAUDE.md is loaded into every session, so everything in it is paid for whether or not it is needed. The map grows with the codebase; the pointer is ~50 tokens. Claude reads the map only when it needs to find where something lives.
+
+**Never turn the pointer into an `@path` import.** CLAUDE.md imports are inlined at load time, which puts the whole map back into every session. The path is written in backticks on purpose.
 
 ### Marker System
 
@@ -130,9 +149,10 @@ The script uses markers to preserve hand-written sections:
 <!-- CODEBASE-MAP:AUTO-END -->
 ```
 
-- If markers exist: Replace content between them
+- If markers exist: Replace content between them (an older inlined map is migrated to the pointer)
 - If no markers: Append after `## Project Context` section
 - Hand-written sections outside markers are preserved
+- `--remove` deletes both the marker block and the map file
 
 ---
 
@@ -148,8 +168,8 @@ Files scanned: 142
 Classes mapped: 47
 Methods mapped: 312
 
-Output added to CLAUDE.md
-Token estimate: ~450 tokens
+Map:     documentation/CODEBASE-MAP.md  (~450 tokens, read on demand)
+Pointer: CLAUDE.md                      (~50 tokens, loaded every session)
 
 Markers: <!-- CODEBASE-MAP:AUTO-START/END -->
 Re-run this skill anytime to update.
@@ -159,11 +179,24 @@ Re-run this skill anytime to update.
 
 ## Output Format
 
-Compact, scannable format optimized for LLM consumption:
+**CLAUDE.md** gets only the pointer:
 
 ```markdown
 <!-- CODEBASE-MAP:AUTO-START -->
 ## Architecture Map
+
+Before searching for where a class, module, or file lives, read `documentation/CODEBASE-MAP.md`
+(generated by codebase-mapper; its header shows the commit it was built from).
+If it disagrees with the code, trust the code and use Grep/Glob.
+<!-- CODEBASE-MAP:AUTO-END -->
+```
+
+**documentation/CODEBASE-MAP.md** holds the map, in a compact, scannable format optimized for LLM consumption:
+
+```markdown
+# Codebase Map
+
+*Auto-generated by codebase-mapper on 2026-10-02 13:02 from commit `e91d48c`. Re-run the skill to refresh. If this disagrees with the code, the code wins.*
 
 ### Python: src/
 - `api/` — FastAPI REST endpoints
@@ -186,8 +219,11 @@ Compact, scannable format optimized for LLM consumption:
   - `OrderList.tsx`: `OrderList` (FC) — props: orders, loading
 - `services/` — API clients
   - `userService.ts`: fetchUser(), createUser(), updateUser()
-<!-- CODEBASE-MAP:AUTO-END -->
 ```
+
+### Limits
+
+This is on-demand discovery by convention, not by mechanism. It depends on Claude following the pointer, and nothing forces it to. The map is also a snapshot: re-run this skill after structural changes. The commit SHA in the header shows how stale it is.
 
 ---
 
@@ -219,21 +255,6 @@ Default exclusions: `node_modules`, `bin`, `obj`, `.git`, `__pycache__`, `venv`,
 
 ---
 
-## Integration with /ai-plugins-and-skills-init
-
-This skill can be invoked automatically during `/ai-plugins-and-skills-init`:
-
-1. After CLAUDE.md is generated, user is asked: "Generate codebase architecture map?"
-2. If yes, this skill runs and inserts the map section
-3. The map updates whenever this skill is re-run
-
-To manually invoke after init:
-```
-Using the codebase-mapper skill, generate an architecture map for this project
-```
-
----
-
 ## Script Locations
 
 Scripts are located in `scripts/` relative to this skill:
@@ -243,9 +264,12 @@ Scripts are located in `scripts/` relative to this skill:
 | `map_python.py` | Python AST-based structure extractor |
 | `map_csharp.py` | C# structure extractor (regex-based) |
 | `map_typescript.py` | TypeScript structure extractor |
-| `update_claude_md.py` | Merges map output into CLAUDE.md |
+| `update_claude_md.py` | Writes the map file and the CLAUDE.md pointer |
+| `test_update_claude_md.py` | pytest suite for `update_claude_md.py` |
+| `test_map_paths.py` | Mappers emit `/` separators and POSIX directory order on every OS |
 
-All scripts use Python stdlib only (no external dependencies).
+All scripts use Python stdlib only (no external dependencies). The tests need pytest:
+`python -m pytest scripts -q`.
 
 ---
 

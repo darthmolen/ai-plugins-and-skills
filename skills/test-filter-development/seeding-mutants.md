@@ -40,6 +40,12 @@ Ordered roughly by how often the corresponding real defect actually occurs.
 | **Remove a side effect** | comment out the `save()` / `Publish()` call | asserts the return value and never the effect |
 | **Change a unit or a sign** | seconds → milliseconds, `+` → `-` | asserts "not null" or "greater than zero" |
 | **Weaken a filter** | drop a `.Where(...)` clause | asserts the count only, or nothing about membership |
+| **Widen a destructive operation's scope** | drop the `WHERE` on an `UPDATE`/`DELETE`, remove the tenant predicate, `RemoveRange` the whole set | asserts only on the target — never on what should have survived |
+
+**Weaken a filter and widen the scope are not the same mutant.** The first damages the *result*;
+the second damages *everything else*, and a test that looks only at the result survives it. It sits
+last because the defect is rarer, not because it matters less — it is the one that turns into an
+outage. Whenever a frame was stated (see *Before RED* in [`SKILL.md`](SKILL.md)), seed it.
 
 **Choosing:** pick the mutant that most resembles the defect you would actually be afraid of in this
 code. If nothing comes to mind, invert the boundary — it is the highest-yield default.
@@ -101,9 +107,17 @@ Mutate the predicate, not the projection: change a `JOIN` to a `LEFT JOIN`, drop
 change `>=` to `>` on a date boundary. A test asserting only row *count* survives most of these,
 which is precisely the finding you want.
 
+On an `UPDATE` or `DELETE`, dropping the `WHERE` is the widen-scope mutant, and it is the one to
+seed first. Make the mutant a valid statement — `WHERE id = ? OR 1 = 1`, not a deleted clause that
+leaves a stray parameter — or the suite goes red on a binding error and proves nothing.
+
 ---
 
 ## Restore checklist
+
+**The `mutation-harness` skill does this for you**, and is the recommended path: it restores the
+original bytes in a `finally` and on Ctrl-C, so there is no window in which an interrupted run can
+leave the mutant behind. The checklist below is for a mutation seeded by hand.
 
 Run this before you claim the step is done — it is two commands and it prevents the one failure mode
 that turns this practice into an outage.
@@ -129,5 +143,16 @@ MUTATE: OrderTotalCalculator.ApplyDiscount — inverted the threshold boundary (
         Restored; git diff clean.
 ```
 
-Three lines. The mutant, the red run it caused, and the restore. That is the whole artifact, and it
+And for a frame, labelled as the promise it breaks rather than the edit it makes:
+
+```
+FRAME:  author — "keep the row, blank name/email/phone, touch no other user"
+MUTATE: UserStore.DeletePii — erasing one user's PII blanks every user (WHERE widened)
+        dotnet test --filter FullyQualifiedName~UserStoreTests
+        Failed! - OtherUsersUntouched: Expected "Grace" but was <null>.
+        Restored; git diff clean.
+```
+
+The mutant, the red run it caused, and the restore — and for a frame, whose word it is. That is the
+whole artifact, and it
 is the difference between a filter and a checkbox.
