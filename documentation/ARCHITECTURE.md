@@ -158,7 +158,9 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── system-spec/
     │   └── SKILL.md
-    └── test-filter-development/
+    ├── test-filter-development/
+    │   └── SKILL.md
+    └── wave-workflow/
         └── SKILL.md
 ```
 
