@@ -51,6 +51,8 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 2. [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed — or any other credential source [`DefaultAzureCredential`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential) will pick up
 3. Authenticated via `az login`
 
+The Azure steps apply only to the Azure tools. [mutation-harness](skills/mutation-harness/) needs only the SDK: it seeds one fault, runs any test command, reports which tests caught it and always reverts — the MUTATE step of test-filter-development.
+
 <!-- SKILLS: tools -->
 | Skill | Description |
 |-------|-------------|
@@ -67,7 +69,7 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 
 <!-- write category flavor text here; the table below is auto-generated -->
 
-Plenty of general-purpose language helpers exist already, so no need to duplicate. These are about keeping and enforcing standards. If you already lean on [EditorConfig](https://editorconfig.org/) and [StyleCop](https://github.com/DotNetAnalyzers/StyleCopAnalyzers) for your C# work, the csharp skill slots in naturally. The Python skill bakes in the usual suspects — [ruff](https://docs.astral.sh/ruff/), [pyright](https://microsoft.github.io/pyright/), pre-commit hooks — for enforcing good script hygiene.
+Plenty of general-purpose language helpers exist already, so no need to duplicate. These are about keeping and enforcing standards. If you already lean on [EditorConfig](https://editorconfig.org/) and [StyleCop](https://github.com/DotNetAnalyzers/StyleCopAnalyzers) for your C# work, the csharp skill slots in naturally. The Python skill bakes in the usual suspects — [ruff](https://docs.astral.sh/ruff/), [pyright](https://microsoft.github.io/pyright/), pre-commit hooks — for enforcing good script hygiene. The C# skill now ships `normalize-cs.cs`, which makes its whitespace and line-ending rules checkable. [technical-writing](skills/technical-writing/) applies the same idea to prose — docs, READMEs, plans, PR descriptions — with `check-prose.ps1` to catch teaser headings, slogans and restated sections.
 
 <!-- SKILLS: language-helpers -->
 | Skill | Description |
@@ -85,6 +87,8 @@ Plenty of general-purpose language helpers exist already, so no need to duplicat
 Where the review helpers above handle one review, these decide how much process a piece of work deserves in the first place — and then hold you to it. Start with [spec-tier](skills/spec-tier/) to route a task to a Low/Medium/High spec depth by stakes, let [plan-workflow](skills/plan-workflow/) move the resulting document through the `planning/` kanban while [plan-writing-syntax](skills/plan-writing-syntax/) governs what goes *on* the card — the frontmatter, the per-kind status vocabularies, and cross-references written as names so they survive the document moving column — and use [test-filter-development](skills/test-filter-development/) instead of plain TDD when an agent is writing the code — it makes the test filter load-bearing by demanding captured RED output and a seeded mutant rather than a claim that the tests were written first.
 
 Four more keep the board honest once work is underway: [plan-sweep-blockers](skills/plan-sweep-blockers/) moves plans that have quietly stalled out of the in-progress column and records what each one is waiting on, [plan-clear-blockers](skills/plan-clear-blockers/) turns that blocked column into an agenda for the hour when the scarce device, environment or person is finally available, [reminders-set](skills/reminders-set/) files the tasks a person must actually do — the ones no test or gate will ever catch — and [plan-record-review](skills/plan-record-review/) writes down what a review decided once you have evaluated it, so the rejections survive the conversation that produced them.
+
+Three skills cover three scales, and each works without the others: [system-spec](skills/system-spec/) is the product — one evergreen spec per area that plans cite feature by feature in `delivers:`; [plan-workflow](skills/plan-workflow/) is one piece of work, now with `scripts/plan-doc.cs` to validate the board and make a move-plus-status-change one step; and [wave-workflow](skills/wave-workflow/) runs several plans in parallel on separate tracks under one lead session, with `wave-lead` and `wave-track` agents to start them in Claude Code. [brown-bag](skills/brown-bag/) turns existing documentation into a talk: outline, slide outline and participant material.
 
 <!-- SKILLS: workflow-composers -->
 | Skill | Description |

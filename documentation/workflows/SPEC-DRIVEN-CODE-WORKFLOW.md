@@ -101,6 +101,26 @@ When implementation is done, have the agent commit the code, then invoke the `co
 
 ---
 
+## Scaling up: specs, plans and waves
+
+The steps above take one plan from prompt to merged code. Three skills cover the scales around it, and each can be used without the others:
+
+| Skill | Scale | What it holds |
+|---|---|---|
+| [`system-spec`](../../skills/system-spec/) | The product | One evergreen spec per area, under `docs/specs/`, describing the target system. Releases are statuses and interim blocks on its features, never trimmed copies. |
+| [`plan-workflow`](../../skills/plan-workflow/) | One piece of work | The plan on the `planning/` board. A plan names the spec features it delivers in `delivers:`. |
+| [`wave-workflow`](../../skills/wave-workflow/) | Parallel plans | Several plans run at once on separate tracks, each in its own session, under one lead session that verifies and pushes. |
+
+[`spec-tier`](../../skills/spec-tier/) decides how deep a plan goes and records it as `tier:` in the frontmatter. `plan-workflow` ships `scripts/plan-doc.cs`, which enforces the frontmatter contract from [`plan-writing-syntax`](../../skills/plan-writing-syntax/) and needs the .NET 10 SDK:
+
+```powershell
+dotnet run "<plan-workflow dir>\scripts\plan-doc.cs" -- validate --path planning              # check the board
+dotnet run "<plan-workflow dir>\scripts\plan-doc.cs" -- close --doc <path> --to completed ... # move + status in one step
+dotnet run "<plan-workflow dir>\scripts\plan-doc.cs" -- spec-table --specs docs --path planning --fix
+```
+
+---
+
 ## Conclusion
 
 By bookending the work with adversarial AI reviews — plan review before implementation, code review after — you catch bugs and drift that would otherwise slip through. This isn't an exhaustive playbook; it's a starting shape for how *you* might set up your own AI-assisted coding workflow. Adjust the skills, the phasing, and the review cadence to match your team and the stakes of the work. The most important artifact from this whole process IS the spec. It is what combats context exhaustion and leads to institutional memory and combats drift that happens without having those spec files in place.

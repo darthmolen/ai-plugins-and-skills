@@ -1,7 +1,7 @@
 {
   "name": "ai-plugins-and-skills",
-  "version": "1.4.1",
-  "description": "Cross-platform AI coding assistant skills following the Agent Skills specification: adversarial plan and code review workflows, curated tools, and language quality standards.",
+  "version": "1.5.0",
+  "description": "Cross-platform AI coding assistant skills following the Agent Skills specification: adversarial plan and code review workflows, specs, plans and parallel waves, curated tools, and language quality standards.",
   "author": {
     "name": "Steven Molen",
     "url": "https://github.com/darthmolen"
@@ -15,6 +15,8 @@
     "plan-review",
     "csharp",
     "python",
-    "azure"
+    "azure",
+    "specs",
+    "waves"
   ]
 }

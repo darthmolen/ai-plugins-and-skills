@@ -53,6 +53,10 @@ For symlinked installs, `git pull` is all that's needed -- changes are picked up
 
 Copilot doesn't support slash commands for plugins
 
+### No Agents
+
+The `wave-lead` and `wave-track` agents under `agents/` are Claude Code only. In Copilot, start the same roles from the skill: invoke `wave-workflow` with `lead` or `track <name>` as its argument, and it loads the same instructions.
+
 ### Marketplace
 
 Copilot CLI marketplace requires GitHub-hosted repos.
