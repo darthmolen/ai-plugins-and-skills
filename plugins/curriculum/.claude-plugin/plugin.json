@@ -1,6 +1,6 @@
 {
   "name": "curriculum",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A seven-stage pipeline that turns source documentation into course definitions and course artifacts: discover, classify, extract, design, govern, generate — with a governance gate that runs twice. Requires a curriculum workspace to operate on.",
   "author": {
     "name": "Steven Molen",

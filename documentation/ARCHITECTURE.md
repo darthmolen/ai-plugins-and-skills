@@ -40,8 +40,11 @@ Skills are platform-agnostic. Any tool implementing the Agent Skills specificati
 |---------|-------------|-------------|-----------------|
 | Skills (SKILL.md) | Yes | Yes | Yes |
 | Slash commands | Yes | No | No |
+| Agents (`agents/*.md`) | Yes | No | No |
 | Plugin system | Yes (marketplace) | Yes (marketplace) | No (skills only) |
 | Auto-invocation | Yes | Yes | Yes |
+
+Agents are Claude Code only. The two in `agents/` (`wave-lead`, `wave-track`) are thin wrappers that preload skills and point at `wave-workflow`'s `lead.md` / `track.md`; in Copilot the same roles start from the skill with `lead` or `track <name>` as its argument.
 
 ## Directory Structure
 
