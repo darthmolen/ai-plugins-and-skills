@@ -16,6 +16,10 @@ function ConvertFrom-GitHubRemote {
     $null
 }
 
+# Every call names github.com, so a GH_HOST set for an Enterprise server cannot send a github.com
+# remote's lookups there.
+$GitHubHost = 'github.com'
+
 # gh exits 4 when it has no login at all, and prints "HTTP 401" for a token GitHub refuses.
 # A 404 is also what GitHub answers for a private repository this login cannot see.
 function Get-GhResponseKind {
@@ -32,7 +36,7 @@ function Invoke-GhApi {
         Stop-Ticket 1 ([ordered]@{ error = 'gh-not-found'; message = 'The GitHub CLI (gh) is not on PATH. Install it and run gh auth login.' })
     }
     $ErrorActionPreference = 'Continue'
-    $all = & gh api -H 'Accept: application/vnd.github+json' $Path 2>&1
+    $all = & gh api --hostname $GitHubHost -H 'Accept: application/vnd.github+json' $Path 2>&1
     $code = $LASTEXITCODE
     $stdout = ($all | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" }) -join "`n"
     $stderr = ($all | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" }) -join ' '
@@ -114,6 +118,10 @@ function Find-GitHubPullRequest {
     param([Parameter(Mandatory)] $RepoInfo, [Parameter(Mandatory)][string] $Branch)
     $head = [uri]::EscapeDataString("$($RepoInfo.owner):$Branch")
     $response = Invoke-GhApi -Path "repos/$($RepoInfo.owner)/$($RepoInfo.repo)/pulls?head=$head&state=open"
+    # A lookup that failed is not a branch with no PR: only a successful empty answer means none.
+    if ($response.Status -eq 404) {
+        Stop-Ticket 4 ([ordered]@{ error = 'not-found'; message = "GitHub has no repository $($RepoInfo.owner)/$($RepoInfo.repo) that this login can see, so its pull requests cannot be read." })
+    }
     @(foreach ($pr in @($response.Json)) {
             if ($null -eq $pr) { continue }
             [pscustomobject][ordered]@{

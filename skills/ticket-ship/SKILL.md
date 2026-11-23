@@ -32,7 +32,7 @@ hand. Below, `{id}` is the ticket's number without `#` or `AB#`.
 | 1 | An unexpected error |
 | 2 | Busy or conflicting |
 | 3 | The `az` or `gh` login has expired |
-| 4 | Refused input: a session in `plan` mode, a PR description over the host's limit |
+| 4 | Refused input: a ticket this repository cannot read or link (`workitem`'s `error`), a session in `plan` mode, a PR description over the host's limit |
 
 ## The recorded mode
 
@@ -50,6 +50,11 @@ is a session.
 
 1. **Find the session and the worktree.**
    - Run `repo`. Exit 3: follow *Expired login*. Exit 4: `origin` is on neither host.
+   - Run `workitem -Id {ticket}`, with `-Tracker` and `-AdoOrg` as `ticket-start`'s *Where the
+     ticket lives* says, before anything else touches a session. It applies every tracker check: an
+     issue in another repository, a GitHub issue on an Azure DevOps repository and a work item in
+     another organization all stop here with exit 4. Keep its `tracker`, `id` and `url` for the
+     draft PR.
    - Run `session-find -Id {ticket} -Repo {repo}`. It returns the ticket's session (by its subject
      `ticket:{id}`, or the `ticket` field of an older file) or `null`. Exit 4 with `mode-refused`: report
      that the ticket's session is in `plan` mode and stop. Do not end that session; it belongs to
@@ -61,7 +66,9 @@ is a session.
      `ship`, so the rest of the run holds locks and ends like any other session.
 2. **Verify.** Run the verification the plan and local guidance name, with
    `superpowers:verification-before-completion`. Report build, standards check and tests separately,
-   with actual outcomes. If verification fails, stop: no commit, no push. When `ship` delegated here
+   with actual outcomes. Include `pr-create`'s dependency audit (its step 4), so an advisory is
+   fixed before the commit rather than found after the push. If verification fails, stop: no
+   commit, no push. When `ship` delegated here
    straight after its own step 6, that verification stands unless a file has changed since.
    - **When the caller has staged a set that differs from the working tree** (`git diff --quiet`
      exits non-zero), verify what will be committed, not the working tree. Run
@@ -96,7 +103,7 @@ is a session.
    - Write the description to a file following `references/pr-description.md` and count it.
    - Open the PR with `pr-create`: source the ticket branch, target the server's `defaultBranch`
      from `repo` unless local guidance names another, as a draft, with the ticket linked. Tell
-     `pr-create` which tracker the ticket is in: on Azure DevOps it links work item `{id}`, and on
+     `pr-create` the `tracker` that step 1's `workitem` returned: on Azure DevOps it links work item `{id}`, and on
      GitHub it writes `Refs #{id}` for an issue or `AB#{id}` for an Azure Boards work item.
      `pr-create` returns an existing open PR from the branch instead of opening a second.
    - Never merge, set auto-complete or add reviewers. Never edit the ticket.
@@ -147,6 +154,7 @@ $tk = if ($env:CLAUDE_PLUGIN_ROOT) {
 | Verb | Does |
 |---|---|
 | `repo` | Reads `origin`: the `host`, the repository and the server's `defaultBranch` |
+| `workitem -Id [-Tracker] [-AdoOrg]` | Reads and checks the ticket; its `tracker`, `id` and `url` |
 | `session-find -Id -Repo` | The ticket's session in this repository, or `null`. Exit 4 (`mode-refused`) for a session in a mode other than `implement` or `ship` |
 | `pr-find -Branch` | Open PRs from the branch |
 

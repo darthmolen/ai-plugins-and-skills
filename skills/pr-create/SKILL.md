@@ -20,7 +20,7 @@ in its reference:
 | Azure DevOps | [references/ado.md](references/ado.md) | The `ado` MCP tools |
 | GitHub | [references/github.md](references/github.md) | The `gh` CLI |
 
-## 1. Detect the host
+## 1. Detect the host and the repository
 
 Read it from the remote; do not assume it from the repository you last worked in.
 
@@ -34,7 +34,9 @@ git remote get-url origin
 | `github.com` | GitHub |
 | Anything else | Ask, unless local guidance (`CLAUDE.md`, `AGENTS.md`) names the host |
 
-Then read the host's reference and follow it for every call below.
+Then read the host's reference and follow it for every call below. Every call names the repository
+`origin` points to, as the reference shows, so another remote (an `upstream`) or a default host set
+in the environment never decides where the PR goes.
 
 ## 2. Confirm the branch is on the remote
 
@@ -66,6 +68,11 @@ nothing in your diff to explain it. Catching it now costs one command; catching 
 a release number, because the version counter moves per run whether the run succeeds or not. Build,
 tests and lint are the caller's verification, done before the commit; this step is only the audit.
 
+By this step the branch is pushed, so a fix made here would not be in the PR, and some callers (a
+wave lead) may not change code at all. This step therefore only checks: it never edits a
+dependency. A caller that can change code runs the same audit earlier, in its own verification
+before the commit (`ticket-ship` does), so that this run finds nothing.
+
 The aim is to run locally the audit the pipeline will run, so find the pipeline's first.
 
 **a. Read the pipeline.** Look in `azure-pipelines*.yml`, `.azure-pipelines/`, `.pipelines/` and
@@ -96,9 +103,12 @@ git ls-files '*.sln' '*.slnx' '*.csproj' '*pyproject.toml' '*uv.lock' '*requirem
   '*pylock.toml' '*package.json' | grep -v node_modules
 ```
 
-**c. Run each stack's audit** as its reference describes, and fix what it finds before creating the
-PR. A finding is a package to raise, not an obstacle: no reference allows turning the audit off or
-ignoring an advisory to get the PR open.
+**c. Run each stack's audit** as its reference describes. If any audit reports an advisory, stop:
+do not open the PR. Report each finding with its package, advisory and fixed version, and hand it
+back to the caller. The fix is a code change and goes through the caller's own workflow:
+implementation, verification, commit and push. Each reference's *A finding* section says how. Then
+run `pr-create` again. No reference allows turning the audit off or ignoring an advisory to get the
+PR open.
 
 **d. Report** which audits ran and their results in the description's Verification section. When a
 stack has no reference here, or nothing pinned to audit, say so there rather than skipping the step

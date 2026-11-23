@@ -13,10 +13,23 @@ The cap is rarely reached, but count the body as `SKILL.md` step 6 shows anyway.
 not fit the Azure DevOps cap of 4000 is usually a body that repeats the commits, and the cut order
 in `SKILL.md` applies at any length.
 
+## The repository
+
+`gh` does not always use `origin`: with an `upstream` remote it prefers `upstream`, and `GH_HOST`
+can point it at a GitHub Enterprise server. Take the repository from `origin` once and pass it to
+every command, host included:
+
+```bash
+R=$(git remote get-url origin | sed -E 's#^(https://([^@/]+@)?|(ssh://)?git@)github\.com[:/]##; s#\.git/?$##; s#/$##')
+R="github.com/$R"                       # github.com/<owner>/<repo>
+```
+
+Every `gh pr` command below takes `--repo "$R"`, and `gh repo view` takes `"https://$R"`.
+
 ## Before the first call
 
 ```bash
-gh auth status
+gh auth status --hostname github.com
 ```
 
 If it reports no login or an expired token, stop. Do not run `gh auth login`, which is interactive.
@@ -26,13 +39,13 @@ name the step that stopped.
 The default branch, when the caller and local guidance name no target:
 
 ```bash
-gh repo view --json defaultBranchRef --jq .defaultBranchRef.name
+gh repo view "https://$R" --json defaultBranchRef --jq .defaultBranchRef.name
 ```
 
 ## Existing PR
 
 ```bash
-gh pr list --head <branch> --state open --json number,url,isDraft
+gh pr list --repo "$R" --head <branch> --state open --json number,url,isDraft
 ```
 
 ## Create
@@ -41,6 +54,7 @@ Pass the body as a file, never inline, so the counted file is what is sent.
 
 ```bash
 gh pr create \
+  --repo "$R" \
   --base <target> \
   --head <branch> \
   --title "<title>" \
@@ -54,7 +68,7 @@ URL as its last line.
 To change an existing PR's description:
 
 ```bash
-gh pr edit <number> --body-file "$SCRATCH/pr.md"
+gh pr edit <number> --repo "$R" --body-file "$SCRATCH/pr.md"
 ```
 
 ## Links

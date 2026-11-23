@@ -161,6 +161,10 @@ function Find-ActivePullRequest {
     $base = "https://dev.azure.com/$($RepoInfo.org)/$($RepoInfo.project)/_apis/git/repositories/$($RepoInfo.repo)/pullrequests"
     $uri = "$($base)?searchCriteria.sourceRefName=refs/heads/$Branch&searchCriteria.status=active&$AdoApiVersion"
     $response = Invoke-AdoRequest -Uri $uri
+    # A lookup that failed is not a branch with no PR: only a successful empty answer means none.
+    if ($response.Status -eq 404) {
+        Stop-Ticket 4 ([ordered]@{ error = 'not-found'; message = "Azure DevOps has no repository $($RepoInfo.project)/$($RepoInfo.repo) that this login can see, so its pull requests cannot be read." })
+    }
     @(foreach ($pr in @(Get-JsonValue $response.Json 'value')) {
             if ($null -eq $pr) { continue }
             $prId = Get-JsonValue $pr 'pullRequestId'

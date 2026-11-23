@@ -402,8 +402,19 @@ Invoke-Case 'tracker-bad-value-refused' {
 
 Invoke-Case 'ado-org-precedence' {
     Assert-Equal 'from-url' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'https://dev.azure.com/from-url/P/_workitems/edit/1') -AdoOrg 'from-flag' -Remote $script:GhRemote) 'URL first'
-    Assert-Equal 'from-flag' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'AB#1') -AdoOrg 'from-flag' -Remote $script:AdoRemote) '-AdoOrg next'
+    Assert-Equal 'from-flag' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'AB#1') -AdoOrg 'from-flag' -Remote $script:GhRemote) '-AdoOrg next'
     Assert-Equal 'your-org' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef '1') -Remote $script:AdoRemote) 'origin last'
+    Assert-Equal 'your-org' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'https://dev.azure.com/your-org/P/_workitems/edit/1') -Remote $script:AdoRemote) 'a URL in origin''s own organization'
+}
+
+Invoke-Case 'ado-org-other-organization-on-ado-refused' {
+    foreach ($case in @(
+            { Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'https://dev.azure.com/other-org/P/_workitems/edit/1') -Remote $script:AdoRemote }
+            { Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'AB#1') -AdoOrg 'other-org' -Remote $script:AdoRemote })) {
+        $outcome = Invoke-Stopping $case
+        Assert-Equal 4 $outcome.Exit 'exit code'
+        Assert-Equal 'other-organization' (Get-Field $outcome.Payload 'error') 'error'
+    }
 }
 
 Invoke-Case 'ado-org-missing-on-github-refused' {
@@ -546,6 +557,26 @@ Invoke-Case 'gh-pr-find-none' {
     Assert-Equal 0 @(Find-GitHubPullRequest -RepoInfo $info -Branch 'bug/12_x').Count 'open PRs'
 }
 
+Invoke-Case 'gh-pr-find-404-refused' {
+    Reset-GhFake
+    $script:GhResponses['repos/someone/Contoso.Orders/pulls?*'] = New-Response 404 $null
+    $info = [pscustomobject]@{ host = 'github'; owner = 'someone'; repo = 'Contoso.Orders'; defaultBranch = 'main' }
+    $outcome = Invoke-Stopping { Find-GitHubPullRequest -RepoInfo $info -Branch 'bug/12_x' }
+    Assert-Equal 4 $outcome.Exit 'a failed lookup is not an empty list'
+    Assert-Equal 'not-found' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'gh-pinned-to-github-com' {
+    # A GH_HOST pointing at an Enterprise server must not redirect a github.com remote's calls.
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { return 'SKIP: the GitHub CLI is not on PATH' }
+    & gh auth status --hostname github.com *> $null
+    if ($LASTEXITCODE -ne 0) { return 'SKIP: gh has no github.com login' }
+    $repo = New-GitRepo 'https://github.com/cli/cli.git'
+    $run = Invoke-Ticket -Arguments @('repo') -WorkingDirectory $repo -Environment @{ GH_HOST = 'ghe.invalid' }
+    Assert-Equal 0 $run.Exit "exit code (stdout: $($run.Stdout))"
+    Assert-Equal 'trunk' (Get-Field $run.Json 'defaultBranch') 'defaultBranch from github.com'
+}
+
 Invoke-Case 'gh-expired-login-exit-3' {
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { return 'SKIP: the GitHub CLI is not on PATH' }
     $repo = New-GitRepo 'https://github.com/someone/Contoso.Orders.git'
@@ -642,6 +673,14 @@ Invoke-Case 'pr-find-active' {
     Assert-Equal 'https://dev.azure.com/your-org/Contoso.Orders/_git/Contoso.Orders/pullrequest/77' (Get-Field $found[0] 'url') 'url'
     Assert-Equal 'True' (Get-Field $found[0] 'isDraft') 'isDraft'
     Assert-True ($script:Requests[0].Uri -like '*searchCriteria.sourceRefName=refs/heads/bug/22744_x*searchCriteria.status=active*') "search: $($script:Requests[0].Uri)"
+}
+
+Invoke-Case 'pr-find-404-refused' {
+    Reset-Fake
+    $script:Responses['GET https://dev.azure.com/your-org/Contoso.Orders/_apis/git/repositories/Contoso.Orders/pullrequests?*'] = New-Response 404 $null
+    $outcome = Invoke-Stopping { Find-ActivePullRequest -RepoInfo $script:RepoInfo -Branch 'bug/22744_x' }
+    Assert-Equal 4 $outcome.Exit 'a failed lookup is not an empty list'
+    Assert-Equal 'not-found' (Get-Field $outcome.Payload 'error') 'error'
 }
 
 # --- cycle 13: the work item -------------------------------------------------------------------

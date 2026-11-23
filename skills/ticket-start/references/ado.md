@@ -14,7 +14,9 @@ organization `origin` names, or for a GitHub repository from `-AdoOrg` or the wo
 | `iterationPath` | The sprint |
 | `relations` | Parent, child and related links, with their names |
 
-Work item IDs are unique across an organization, so the number alone finds it.
+Work item IDs are unique across an organization, so the number alone finds it. On an Azure DevOps
+repository the PR links a work item by number within the repository's own organization, so a work
+item in another organization is refused (`other-organization`): start it from a repository there.
 
 ## Linking
 

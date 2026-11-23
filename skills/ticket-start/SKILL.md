@@ -29,7 +29,12 @@ GitHub repository may keep its work in Azure Boards.
 Pass `-Tracker ado` or `-Tracker github` to `workitem` when local guidance names the tracker. A
 GitHub repository whose tickets are in Azure Boards also needs the organization: from the
 work item URL, or from local guidance as `-AdoOrg`. If neither says, ask. An Azure DevOps
-repository with its tickets in GitHub Issues is not supported: `workitem` refuses it with exit 4.
+repository with its tickets in GitHub Issues is not supported: `workitem` refuses it with exit 4,
+as it refuses an Azure Boards work item in another organization than the repository's.
+
+A repository keeps its tickets in one tracker. The session subject is `ticket:{id}`, the number
+alone, so in a GitHub repository that used both trackers at once, issue `#12` and work item
+`AB#12` would share one session. That is not supported.
 
 The details of each tracker, its fields and its login, are in `references/ado.md` and
 `references/github.md`. In the steps below, `{id}` is the ticket's number without `#` or `AB#`.

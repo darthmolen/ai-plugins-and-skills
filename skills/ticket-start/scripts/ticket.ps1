@@ -186,11 +186,18 @@ function Resolve-Tracker {
 }
 
 # The Azure Boards organization: the ticket's URL, then -AdoOrg, then origin when it is on ADO.
+# On an ADO repository the PR links a work item by number within origin's organization, so a work
+# item in another organization would link the wrong one; it is refused.
 function Resolve-AdoOrg {
     param([Parameter(Mandatory)] $Ref, [string] $AdoOrg, [Parameter(Mandatory)] $Remote)
-    if ($Ref.org) { return $Ref.org }
-    if ($AdoOrg) { return $AdoOrg }
-    if ($Remote.host -eq 'ado') { return $Remote.org }
+    $org = if ($Ref.org) { $Ref.org } elseif ($AdoOrg) { $AdoOrg } elseif ($Remote.host -eq 'ado') { $Remote.org } else { $null }
+    if ($org -and $Remote.host -eq 'ado' -and $org -ne $Remote.org) {
+        Stop-Ticket 4 ([ordered]@{
+                error   = 'other-organization'
+                message = "Work item $($Ref.id) is in the $org organization, and this repository is in $($Remote.org). Its PR could link only a work item in $($Remote.org); start the ticket from a repository in $org."
+            })
+    }
+    if ($org) { return $org }
     Stop-Ticket 4 ([ordered]@{
             error   = 'no-ado-org'
             message = 'This repository is on GitHub and the ticket is in Azure Boards, so the organization cannot come from origin. Pass -AdoOrg, from local guidance or the caller, or give the work item URL.'
