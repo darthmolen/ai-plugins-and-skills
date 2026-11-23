@@ -157,19 +157,20 @@ clean start and never widening its isolation to make a test pass, are in
 
 ## Ending a session
 
-Every stop ends the session: a finish, a failed step, an expired Azure login, a refused push. Ending
+Every stop ends the session: a finish, a failed step, an expired `az` or `gh` login, a refused push. Ending
 removes the session's isolated environment, releases every lock it holds, and removes its session
 file. The worktree stays, so you can review it. Removing it is your decision.
 
 How the work leaves the session depends on the driver and the mode.
 
-### A ticket: `/ticket-end`
+### A ticket: `/ticket-ship`
 
 ```text
-/ticket-end 22744
+/ticket-ship 22744
+/ticket-ship #412
 ```
 
-`ticket-end` turns a ticket's finished work into a draft pull request:
+`ticket-ship` turns a ticket's finished work into a draft pull request:
 
 1. Finds the ticket's session. It accepts one in `implement` or `ship` mode, and refuses one in any
    other mode with exit 4, because a `plan` session has built nothing. With no session, it starts
@@ -178,26 +179,26 @@ How the work leaves the session depends on the driver and the mode.
 3. Commits the work with the completed plan, and turns any check that can only happen after the
    pull request into a `verify` reminder.
 4. Pushes, never with force.
-5. Opens a draft pull request through `ado-pr`, linked to the work item.
+5. Opens a draft pull request through `pr-create`, linked to the issue or work item.
 6. Ends the session, and prints the pull request URL as its last line.
 
-Running `/ticket-end` is your consent to commit and push, even when the session started in
-`implement`. `/ticket-start 22744 ship` runs the same steps by handing over to `ticket-end`. A rerun
-after a failure picks up where it stopped: `ado-pr` returns the pull request the branch already has
+Running `/ticket-ship` is your consent to commit and push, even when the session started in
+`implement`. `/ticket-start 22744 ship` runs the same steps by handing over to `ticket-ship`. A rerun
+after a failure picks up where it stopped: `pr-create` returns the pull request the branch already has
 instead of opening a second.
 
-### A plan: `plan-workflow`'s close, then `ado-pr`
+### A plan: `plan-workflow`'s close, then `pr-create`
 
 When a plan's work is done, `plan-workflow` completes it: the Status block, the move to
 `completed/`, and any `verify` reminders, in the same pull request as the code. Then:
 
-- A session in `ship` or `lead` pushes the branch and raises the pull request: `ado-pr` on Azure
-  DevOps, `gh pr create` on GitHub.
+- A session in `ship` or `lead` pushes the branch and raises the pull request with
+  `pr-create`, on Azure DevOps or GitHub.
 - A session in `plan`, `implement` or `commit` stops at the close. Pushing is yours, or the wave
   lead's.
 
-On Azure DevOps, `ado-pr` opens drafts and links work items when asked, and returns an existing
-active pull request from the branch rather than opening another.
+`pr-create` reads the host from the remote. It opens drafts and links work items or issues when
+asked, and returns an existing open pull request from the branch rather than opening another.
 
 ### A wave track or lead
 
@@ -221,10 +222,11 @@ you started a session for, so the next session on the machine does not find a le
 - [`session-workflow`](../../skills/session-workflow/SKILL.md): the session file, modes, locks,
   stale detection and local guidance
 - [`ticket-start`](../../skills/ticket-start/SKILL.md) and
-  [`ticket-end`](../../skills/ticket-end/SKILL.md): the driver for Azure DevOps work items
+  [`ticket-ship`](../../skills/ticket-ship/SKILL.md): the driver for tickets, GitHub issues and Azure
+  DevOps work items
 - [`plan-workflow`](../../skills/plan-workflow/SKILL.md): the board, and the close that hands off to
   the pull request
-- [`ado-pr`](../../skills/ado-pr/SKILL.md): Azure DevOps pull requests, drafts and work-item links
+- [`pr-create`](../../skills/pr-create/SKILL.md): pull requests on Azure DevOps and GitHub, drafts and work-item links
 - [`wave-workflow`](../../skills/wave-workflow/SKILL.md): many sessions under a lead
 - [`test-filter-development`](../../skills/test-filter-development/SKILL.md): tests, and isolated
   environments

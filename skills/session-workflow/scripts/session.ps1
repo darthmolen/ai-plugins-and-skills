@@ -186,7 +186,7 @@ function Resolve-SessionSubject([string] $Ticket, [string] $Subject) {
             })
     }
     if ($kind -eq 'ticket' -and $value -notmatch '^\d+$') {
-        Stop-Ticket 4 ([ordered]@{ error = 'bad-id'; message = "A ticket is a work item number, not '$value'." })
+        Stop-Ticket 4 ([ordered]@{ error = 'bad-id'; message = "A ticket is the number of an issue or work item, without # or AB#, not '$value'." })
     }
     [pscustomobject]@{ subject = $Subject; kind = $kind; value = $value; ticket = if ($kind -eq 'ticket') { $value } else { $null } }
 }

@@ -121,7 +121,7 @@ When implementation is done, have the agent commit the code, then invoke the `co
 
 In the same pull request as the code, merge each feature-spec block into the system spec: leave the text as it is for `agree`, replace it for `amend`, and add a new feature section for `add`. Set each delivered feature's status, and run `spec-table --fix` (`system-spec`). Then close the plan with `plan-workflow`: the Status block, the move to `completed/`, and a `verify` reminder for any check that can only happen after the pull request. The plan is not edited again; the next change to this feature is a new plan with its own feature-spec.
 
-Raise the pull request — `ado-pr` on Azure DevOps, `gh pr create` on GitHub. A session started in `plan`, `implement` or `commit` mode stops at the close, and the pull request is yours to raise. See [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md#ending-a-session).
+Raise the pull request with `pr-create`, on Azure DevOps or GitHub. A session started in `plan`, `implement` or `commit` mode stops at the close, and the pull request is yours to raise. See [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md#ending-a-session).
 
 ---
 

@@ -35,9 +35,9 @@ You write a brief, turn it into a detailed plan with its feature-spec, get an ad
 
 The plan constrains the agent during implementation, and its feature-spec merges into the area's system spec, which becomes institutional memory as the solution grows over time. The two adversarial reviews (plan + code) catch the bugs and drift you and the authoring session both missed.
 
-When the work is done, close the plan with `plan-workflow`: it moves to `planning/completed/` with its Status block, and any check that can only happen after the pull request becomes a `verify` reminder. Then raise the pull request — `ado-pr` on Azure DevOps, `gh pr create` on GitHub. A session started in `plan`, `implement` or `commit` mode stops at the close; raise the pull request yourself. See [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md#ending-a-session).
+When the work is done, close the plan with `plan-workflow`: it moves to `planning/completed/` with its Status block, and any check that can only happen after the pull request becomes a `verify` reminder. Then raise the pull request with `pr-create`, on Azure DevOps or GitHub. A session started in `plan`, `implement` or `commit` mode stops at the close; raise the pull request yourself. See [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md#ending-a-session).
 
-For an Azure DevOps ticket, `/ticket-start {id}` plans the ticket in its own worktree, `/ticket-start {id} implement` builds and verifies it uncommitted, and `/ticket-end {id}` commits, pushes and opens a draft pull request linked to the ticket. See [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md).
+For a ticket, a GitHub issue or an Azure DevOps work item, `/ticket-start {id}` plans the ticket in its own worktree, `/ticket-start {id} implement` builds and verifies it uncommitted, and `/ticket-ship {id}` commits, pushes and opens a draft pull request linked to the ticket. See [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md).
 
 When several plans need to run at once, run them as a wave: see [WAVE-WORKFLOW.md](WAVE-WORKFLOW.md).
 
@@ -51,7 +51,7 @@ When several plans need to run at once, run them as a wave: see [WAVE-WORKFLOW.m
 | [PLAN-REVIEW-WORKFLOW.md](PLAN-REVIEW-WORKFLOW.md) | Mid-planning: you've drafted a plan and want a second AI (or a second session) to tear it apart before any code gets written. Three skills: `plan-send-review`, `plan-intake-review`, `plan-receive-review`. |
 | [CODE-REVIEW-WORKFLOW.md](CODE-REVIEW-WORKFLOW.md) | Post-implementation: ad-hoc per-slice review (path A) or full-branch sweep with synthesis (path B). Seven skills, file-system kanban, idempotent. |
 | [WAVE-WORKFLOW.md](WAVE-WORKFLOW.md) | Several plans need to run in parallel: when to write a wave, starting the lead and track sessions, where people approve, and closing the wave. |
-| [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md) | More than one agent works on your machine, or you start a ticket with `/ticket-start`: starting a session, choosing its mode, locks on shared ports and databases, and ending it with `/ticket-end` or a pull request. |
+| [SESSION-WORKFLOW.md](SESSION-WORKFLOW.md) | More than one agent works on your machine, or you start a ticket with `/ticket-start`: starting a session, choosing its mode, locks on shared ports and databases, and ending it with `/ticket-ship` or a pull request. |
 
 The terms these pages use (system spec, feature-spec, plan, brief, slice, session, mode, subject) are defined in [VOCABULARY.md](../VOCABULARY.md).
 
@@ -91,7 +91,7 @@ The workflows are powered by the skills bundled in this marketplace:
 
 - **Specs and plans:** [system-spec](../../skills/system-spec/), [system-spec-derive](../../skills/system-spec-derive/), [system-spec-backfill](../../skills/system-spec-backfill/), [plan-tier](../../skills/plan-tier/), [plan-workflow](../../skills/plan-workflow/), [plan-writing-syntax](../../skills/plan-writing-syntax/)
 - **Parallel plans:** [wave-workflow](../../skills/wave-workflow/)
-- **Sessions and tickets:** [session-workflow](../../skills/session-workflow/), [ticket-start](../../skills/ticket-start/), [ticket-end](../../skills/ticket-end/), [ado-pr](../../skills/ado-pr/)
+- **Sessions and tickets:** [session-workflow](../../skills/session-workflow/), [ticket-start](../../skills/ticket-start/), [ticket-ship](../../skills/ticket-ship/), [pr-create](../../skills/pr-create/)
 - **Plan review:** [plan-send-review](../../skills/plan-send-review/), [plan-intake-review](../../skills/plan-intake-review/), [plan-receive-review](../../skills/plan-receive-review/)
 - **Code review:** [code-send-review](../../skills/code-send-review/), [code-intake-review](../../skills/code-intake-review/), [code-review-apply](../../skills/code-review-apply/), [code-review-plan-create](../../skills/code-review-plan-create/), [code-review-seed-slices](../../skills/code-review-seed-slices/), [code-review-plan-execute](../../skills/code-review-plan-execute/), [code-synthesize-reviews](../../skills/code-synthesize-reviews/)
 

@@ -28,9 +28,10 @@ Install `superpowers` from inside Claude Code:
 
 | What | Needed by | Check |
 | --- | --- | --- |
-| [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (`pwsh`) | The session and ticket scripts (`session-workflow`, `ticket-start`, `ticket-end`) and the `wave-session-title` hook. Windows PowerShell 5.1 is not enough | `pwsh --version` |
+| [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (`pwsh`) | The session and ticket scripts (`session-workflow`, `ticket-start`, `ticket-ship`) and the `wave-session-title` hook. Windows PowerShell 5.1 is not enough | `pwsh --version` |
 | Python 3.10 or later, with [`uv`](https://docs.astral.sh/uv/getting-started/installation/) | `python-project` (its script needs Python 3.11) and the projects it scaffolds, and the Python variants of the tool skills | `python --version`, `uv --version` |
-| [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli), logged in with `az login` | `ticket-start` and `ticket-end` (Azure DevOps work items), and the Azure tool skills | `az account show` |
+| [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli), logged in with `az login` | `ticket-start` and `ticket-ship` for Azure DevOps work items, and the Azure tool skills | `az account show` |
+| [GitHub CLI](https://cli.github.com/), logged in with `gh auth login` | `ticket-start` and `ticket-ship` for GitHub issues, and `pr-create` on GitHub | `gh auth status` |
 
 ## Installation
 
@@ -91,7 +92,7 @@ Any skill can also be invoked by name, with arguments:
 
 ```
 /ai-plugins-and-skills:ticket-start 22744 implement
-/ai-plugins-and-skills:ticket-end 22744
+/ai-plugins-and-skills:ticket-ship 22744
 ```
 
 ### Slash Commands
@@ -126,7 +127,7 @@ The hook needs pwsh 7. A bash filter runs first, so pwsh starts only for a wave-
 
 ### Sessions and tickets
 
-When more than one agent works on your machine, each runs as a `session-workflow` session: a file in `~/.agent-sessions/` that records its subject and mode, plus locks on ports, local databases and containers it shares with the others. `ticket-start` and `ticket-end` drive a session from an Azure DevOps work item to a draft pull request. See [SESSION-WORKFLOW.md](workflows/SESSION-WORKFLOW.md).
+When more than one agent works on your machine, each runs as a `session-workflow` session: a file in `~/.agent-sessions/` that records its subject and mode, plus locks on ports, local databases and containers it shares with the others. `ticket-start` and `ticket-ship` drive a session from a ticket, a GitHub issue or an Azure DevOps work item, to a draft pull request. See [SESSION-WORKFLOW.md](workflows/SESSION-WORKFLOW.md).
 
 ### C# Coding Standards
 

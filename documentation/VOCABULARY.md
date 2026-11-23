@@ -45,6 +45,7 @@ pull request as the code.
 | **Session** | One agent working in one worktree of a repository on one machine, with a subject and a mode. It starts through `session-workflow start` and ends at every stop | A session file in `~/.agent-sessions/`, never committed | `session-workflow` | A chat or harness session. It is the record other sessions on the machine read |
 | **Mode** | The consent a session runs under: `plan`, `implement`, `commit`, `ship` or `lead`. Each allows its own changes for the session's subject and nothing wider | The session file's `mode` field | `session-workflow`; a driver such as `ticket-start` picks it | A permission setting of the harness. Holding to it is the agent's job |
 | **Subject** | What a session works on, as `<kind>:<value>`: `ticket:22744`, `plan:<name>`, `wave:wave-<n>/<track>` or `wave:wave-<n>/lead`. One repository has one live session per subject | The session file's `subject` field | `session-workflow`; a driver such as `ticket-start` picks it | A context. The AI's context window and the waves context document are unrelated |
+| **Ticket** | One unit of tracked work, whichever tracker holds it: a GitHub issue or an Azure DevOps work item of any type. Given as a number, `#412`, `AB#22744` or its URL | GitHub Issues or Azure Boards, which need not be the repository's own host | `ticket-start`, `ticket-ship` | An issue or a story. Those are one tracker's words for it |
 | **Driver** | Whatever starts a session and names its subject and mode: `ticket-start`, a plan you run yourself, or a wave's lead and track instructions | Outside `session-workflow`, which knows nothing about tickets or waves | The driving skill | Part of the session layer |
 | **Lock** | A claim one session holds on a resource shared only while something runs, such as a port, local database or container, named from its address (`port-5000`) | `~/.agent-sessions/locks/` | `session-workflow` | A file-set check. Collisions on files are prevented when a plan is admitted to a track |
 | **Slice** | One unit of a code review: a commit range with its focus areas and the plans it implements | `planning/code-reviews/`, `kind: slice` | `code-send-review`, `code-review-seed-slices` | A plan or a spec |
@@ -88,9 +89,12 @@ process they run (`plan-workflow`, `session-workflow`).
 | "slice spec" | slice |
 | "write the spec", meaning the prompt file | write the brief |
 | `angular-expert`, `python-pro`, `react-specialist`, `sql-pro`, `typescript-pro` | `angular-developer`, `python-developer`, `react-developer`, `sql-developer`, `typescript-developer` |
+| `ado-pr`, or `gh pr create` named beside it | `pr-create`, on either host |
+| `ticket-end` | `ticket-ship` |
 
-`spec-tier` still loads, as a deprecated shim that points to `plan-tier`. The other old skill names
-were removed with no alias.
+`spec-tier` and `ado-pr` still load, as deprecated shims that point to `plan-tier` and
+`pr-create`. `ticket-end` was renamed within an hour of its release and keeps no alias. The other
+old skill names were removed with no alias.
 
 External specifications, such as OpenAPI or the Agent Skills format, keep their own names.
 
@@ -119,6 +123,14 @@ The old suffixes told a reader nothing: `-expert`, `-pro` and `-specialist` all 
 the code". Once a subject had two skills, one that sets the project up and one that writes the code
 in it, the name had to say which was which. The renamed skills keep no alias, because an alias is a
 second skill with the same description, and the two would compete to load.
+
+### "Ticket", and `ticket-ship` rather than `ticket-end`
+
+GitHub calls a unit of work an issue and Azure DevOps calls it a work item; a story is one type of
+work item among several. "Ticket" belongs to neither, so the two skills that drive one keep it and
+read either tracker. `ticket-end` became `ticket-ship` because "end" read as closing the ticket,
+which the skill never does: it commits, pushes and opens a draft pull request, the work of the
+`ship` mode that hands over to it.
 
 ### A session layer between plans and waves
 

@@ -53,17 +53,18 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 2. [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed — or any other credential source [`DefaultAzureCredential`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential) will pick up
 3. Authenticated via `az login`
 
-The Azure steps apply only to the Azure tools. [mutation-harness](skills/mutation-harness/) needs only the SDK: it seeds one fault, runs any test command, reports which tests caught it and always reverts — the MUTATE step of test-filter-development. [python-project](skills/python-project/) needs Python and [uv](https://docs.astral.sh/uv/) instead: it scaffolds a Python project or audits one against `python-architect`, and in Claude Code it is also the `/ai-plugins-and-skills:python-project` command. [ado-pr](skills/ado-pr/) opens and updates Azure DevOps pull requests through the Azure DevOps MCP tools.
+The Azure steps apply only to the Azure tools. [mutation-harness](skills/mutation-harness/) needs only the SDK: it seeds one fault, runs any test command, reports which tests caught it and always reverts — the MUTATE step of test-filter-development. [python-project](skills/python-project/) needs Python and [uv](https://docs.astral.sh/uv/) instead: it scaffolds a Python project or audits one against `python-architect`, and in Claude Code it is also the `/ai-plugins-and-skills:python-project` command. [pr-create](skills/pr-create/) opens pull requests on Azure DevOps, through the Azure DevOps MCP tools, and on GitHub, through the `gh` CLI.
 
 <!-- SKILLS: tools -->
 | Skill | Description |
 |-------|-------------|
 | [codebase-mapper](skills/codebase-mapper/) | Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing |
 | [ace-fca-workflow](skills/ace-fca-workflow/) | Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks |
-| [ado-pr](skills/ado-pr/) | Use when creating or updating an Azure DevOps pull request via the ado MCP tools — after plan-wor... |
+| [ado-pr](skills/ado-pr/) | Deprecated name; invoke pr-create. |
 | [azure-servicebus-operations](skills/azure-servicebus-operations/) | Use when peeking, draining, snapshotting metrics on, enumerating, or otherwise inspecting/manipul... |
 | [bulk-rename](skills/bulk-rename/) | Use when a refactor needs the same identifier rename applied across many files (type-cluster rena... |
 | [mutation-harness](skills/mutation-harness/) | Use when seeding a mutant to check whether a test suite actually detects a wrong answer — the MUT... |
+| [pr-create](skills/pr-create/) | Use when opening, or updating the description of, a pull request on Azure DevOps or GitHub — afte... |
 | [psql-query](skills/psql-query/) | Use when running ad-hoc read-only SQL against Azure Database for PostgreSQL — exploring tables, s... |
 | [python-project](skills/python-project/) | Use when scaffolding a new Python project or auditing an existing one against the python-architec... |
 | [sql-query](skills/sql-query/) | Use when running ad-hoc read-only T-SQL against Azure SQL — exploring Query Store, sampling table... |
@@ -96,7 +97,7 @@ Three skills cover three scales, and each works without the others: [system-spec
 
 An area built before it had a system spec can get one: [system-spec-backfill](skills/system-spec-backfill/) merges the feature-specs and design sections of its completed plans in date order, and [system-spec-derive](skills/system-spec-derive/) drafts one from the code when there are no usable plans. Each plan's feature-spec then merges into the system spec in the same pull request as the code, and the plan completes at that pull request, with any post-merge check filed as a `verify` reminder.
 
-When more than one agent works on one machine, [session-workflow](skills/session-workflow/) gives each a session file with its subject and mode (`plan`, `implement`, `commit`, `ship` or `lead`), locks on shared ports, databases and containers, and teardown at every stop; the lead and every track of a wave is one such session. [ticket-start](skills/ticket-start/) and [ticket-end](skills/ticket-end/) drive a session from an Azure DevOps work item to a draft pull request linked to it. In Claude Code, the plugin's `wave-session-title` hook names wave sessions `wave-<n>-lead` or `wave-<n>-<track>` from their first prompt, so nobody renames tabs by hand; it needs pwsh 7. See [SESSION-WORKFLOW.md](documentation/workflows/SESSION-WORKFLOW.md) and [WAVE-WORKFLOW.md](documentation/workflows/WAVE-WORKFLOW.md).
+When more than one agent works on one machine, [session-workflow](skills/session-workflow/) gives each a session file with its subject and mode (`plan`, `implement`, `commit`, `ship` or `lead`), locks on shared ports, databases and containers, and teardown at every stop; the lead and every track of a wave is one such session. [ticket-start](skills/ticket-start/) and [ticket-ship](skills/ticket-ship/) drive a session from a ticket, a GitHub issue or an Azure DevOps work item, to a draft pull request linked to it. In Claude Code, the plugin's `wave-session-title` hook names wave sessions `wave-<n>-lead` or `wave-<n>-<track>` from their first prompt, so nobody renames tabs by hand; it needs pwsh 7. See [SESSION-WORKFLOW.md](documentation/workflows/SESSION-WORKFLOW.md) and [WAVE-WORKFLOW.md](documentation/workflows/WAVE-WORKFLOW.md).
 
 <!-- SKILLS: workflow-composers -->
 | Skill | Description |
@@ -116,8 +117,8 @@ When more than one agent works on one machine, [session-workflow](skills/session
 | [system-spec-backfill](skills/system-spec-backfill/) | Use when an area was built plan by plan and its plans in planning/completed/ and planning/in-prog... |
 | [system-spec-derive](skills/system-spec-derive/) | Use when an existing system has no system spec and no usable plans to build one from — writes a d... |
 | [test-filter-development](skills/test-filter-development/) | Use when implementing any feature or bugfix with AI assistance, before writing implementation code |
-| [ticket-end](skills/ticket-end/) | Use when an Azure DevOps ticket's work is implemented and verified and should become a draft PR, ... |
-| [ticket-start](skills/ticket-start/) | Use when someone gives an Azure DevOps work item number and wants it planned, implemented or ship... |
+| [ticket-ship](skills/ticket-ship/) | Use when a ticket's work — a GitHub issue or an Azure DevOps work item — is implemented and verif... |
+| [ticket-start](skills/ticket-start/) | Use when someone gives a ticket — a GitHub issue or an Azure DevOps work item — and wants it plan... |
 | [wave-workflow](skills/wave-workflow/) | Use when several plans need to run in parallel across tracks under one lead session — setting up ... |
 <!-- END SKILLS: workflow-composers -->
 

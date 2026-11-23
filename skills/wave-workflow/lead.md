@@ -13,7 +13,7 @@ wave already exists: show it to the person and stop.
 
 `lead` mode is the consent this file describes: verification worktrees, the coordination documents
 (the waves context, the wave document and the plans), pushes of verified branches, and pull
-requests (`ado-pr` on Azure DevOps, `gh pr create` on GitHub). It never writes production code,
+requests (`pr-create`). It never writes production code,
 force-pushes or merges.
 
 Run `session-workflow end` at every stop: when you stop for review, at the end of a sitting, on a
@@ -34,7 +34,7 @@ removes your session file. Start a new session the same way when you resume.
 
 Use `plan-tier`, `plan-workflow`, `plan-writing-syntax`, `plan-send-review`,
 `plan-receive-review`, `plan-record-review`, `technical-writing`, and for every pull request
-`ado-pr` on Azure DevOps or `gh pr create` on GitHub.
+`pr-create`.
 
 ## Before any track starts
 

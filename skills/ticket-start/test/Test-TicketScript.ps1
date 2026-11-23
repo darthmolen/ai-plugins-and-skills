@@ -177,11 +177,28 @@ Invoke-Case 'remote-ssh' {
     Assert-Equal 'Contoso.Billing' (Get-Field $parsed 'repo') 'repo'
 }
 
-Invoke-Case 'remote-not-ado-refused' {
-    $repo = New-GitRepo 'https://github.com/someone/something.git'
+Invoke-Case 'remote-unsupported-refused' {
+    $repo = New-GitRepo 'https://gitlab.com/someone/something.git'
     $run = Invoke-Ticket -Arguments @('repo') -WorkingDirectory $repo
     Assert-Equal 4 $run.Exit 'exit code'
-    Assert-Equal 'not-ado-remote' (Get-Field $run.Json 'error') 'error'
+    Assert-Equal 'unsupported-remote' (Get-Field $run.Json 'error') 'error'
+}
+
+Invoke-Case 'remote-github-https' {
+    $parsed = ConvertFrom-Remote 'https://github.com/someone/Contoso.Orders.git'
+    Assert-Equal 'github' (Get-Field $parsed 'host') 'host'
+    Assert-Equal 'someone' (Get-Field $parsed 'owner') 'owner'
+    Assert-Equal 'Contoso.Orders' (Get-Field $parsed 'repo') 'repo, without .git'
+}
+
+Invoke-Case 'remote-github-ssh' {
+    $parsed = ConvertFrom-Remote 'git@github.com:someone/Contoso.Orders.git'
+    Assert-Equal 'github' (Get-Field $parsed 'host') 'host'
+    Assert-Equal 'Contoso.Orders' (Get-Field $parsed 'repo') 'repo'
+}
+
+Invoke-Case 'remote-ado-host' {
+    Assert-Equal 'ado' (Get-Field (ConvertFrom-Remote $script:AdoHttps) 'host') 'host'
 }
 
 Invoke-Case 'repo-default-branch-from-server' {
@@ -213,6 +230,16 @@ Invoke-Case 'branch-punctuation' {
 Invoke-Case 'branch-cut-at-underscore' {
     $title = 'alpha beta gamma dalet epsilon zeta eta theta iota kappa lambda mu'
     Assert-Equal 'feature/9_alpha_beta_gamma_dalet_epsilon_zeta_eta_theta_iota_kappa' (Get-BranchFallback -Id 9 -Type 'User Story' -Title $title) 'name'
+}
+
+Invoke-Case 'branch-feature' {
+    Assert-Equal 'feature/12_add_export' (Get-BranchFallback -Id 12 -Type 'Feature' -Title 'Add export') 'name'
+}
+
+Invoke-Case 'branch-name-takes-a-hash-id' {
+    $run = Invoke-Ticket -Arguments @('branch-name', '-Id', '#12', '-Type', 'Bug', '-Title', 'Crash')
+    Assert-Equal 0 $run.Exit "exit code (stdout: $($run.Stdout))"
+    Assert-Equal 'bug/12_crash' (Get-Field $run.Json 'branch') 'branch'
 }
 
 Invoke-Case 'branch-task-refused' {
@@ -296,7 +323,7 @@ Invoke-Case 'expired-login-cached-tenant' {
     Assert-Equal "az login --tenant $tenant" (Get-Field $run.Json 'loginCommand') 'loginCommand'
 }
 
-# --- cycle 14: the draft PR is ado-pr's, so pr-create is no verb -------------------------------
+# --- cycle 14: the draft PR is the pr-create skill's, so pr-create is no verb --------------------
 
 Invoke-Case 'pr-create-is-not-a-verb' {
     $repo = New-GitRepo $script:AdoHttps
@@ -306,6 +333,225 @@ Invoke-Case 'pr-create-is-not-a-verb' {
     Assert-Equal 4 $run.Exit "exit code (stdout: $($run.Stdout))"
     Assert-Equal 'usage' (Get-Field $run.Json 'error') 'error'
     Assert-True ("$(Get-Field $run.Json 'message')" -like "Unknown verb 'pr-create'*") "message: $(Get-Field $run.Json 'message')"
+}
+
+# --- cycle 16: the ticket as given, and the tracker it lives in -------------------------------
+
+Invoke-Case 'ref-forms' {
+    $cases = @(
+        , @('22744', '22744', '', '')
+        , @('#12', '12', 'github', '')
+        , @('AB#22744', '22744', 'ado', '')
+        , @('https://dev.azure.com/your-org/Contoso.Orders/_workitems/edit/22744', '22744', 'ado', 'your-org')
+        , @('https://github.com/someone/Contoso.Orders/issues/12', '12', 'github', '')
+    )
+    foreach ($case in $cases) {
+        $ref = ConvertFrom-TicketRef $case[0]
+        Assert-Equal $case[1] $ref.id "id of $($case[0])"
+        Assert-Equal $case[2] "$($ref.tracker)" "tracker of $($case[0])"
+        Assert-Equal $case[3] "$($ref.org)" "org of $($case[0])"
+    }
+}
+
+Invoke-Case 'ref-malformed-refused' {
+    $outcome = Invoke-Stopping { ConvertFrom-TicketRef 'PROJ-12' }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'bad-id' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+$script:GhRemote = [pscustomobject]@{ host = 'github'; url = 'https://github.com/someone/Contoso.Orders'; owner = 'someone'; repo = 'Contoso.Orders' }
+$script:AdoRemote = [pscustomobject]@{ host = 'ado'; url = $script:AdoHttps; org = 'your-org'; project = 'Contoso.Orders'; repo = 'Contoso.Orders' }
+
+Invoke-Case 'tracker-bare-number-follows-host' {
+    Assert-Equal 'github' (Resolve-Tracker -Ref (ConvertFrom-TicketRef '12') -Remote $script:GhRemote) 'on GitHub'
+    Assert-Equal 'ado' (Resolve-Tracker -Ref (ConvertFrom-TicketRef '22744') -Remote $script:AdoRemote) 'on Azure DevOps'
+}
+
+Invoke-Case 'tracker-explicit-wins-for-bare-number' {
+    # A GitHub repository that keeps its work in Azure Boards, as its local guidance says.
+    Assert-Equal 'ado' (Resolve-Tracker -Ref (ConvertFrom-TicketRef '22744') -Explicit 'ado' -Remote $script:GhRemote) 'tracker'
+}
+
+Invoke-Case 'tracker-ab-on-github' {
+    Assert-Equal 'ado' (Resolve-Tracker -Ref (ConvertFrom-TicketRef 'AB#22744') -Remote $script:GhRemote) 'tracker'
+}
+
+Invoke-Case 'tracker-conflict-refused' {
+    $outcome = Invoke-Stopping { Resolve-Tracker -Ref (ConvertFrom-TicketRef 'AB#22744') -Explicit 'github' -Remote $script:GhRemote }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'tracker-conflict' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'tracker-github-issue-on-ado-refused' {
+    $outcome = Invoke-Stopping { Resolve-Tracker -Ref (ConvertFrom-TicketRef '#12') -Remote $script:AdoRemote }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'unsupported-tracker' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'tracker-issue-in-other-repository-refused' {
+    $outcome = Invoke-Stopping { Resolve-Tracker -Ref (ConvertFrom-TicketRef 'https://github.com/someone/Other/issues/12') -Remote $script:GhRemote }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'other-repository' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'tracker-bad-value-refused' {
+    $outcome = Invoke-Stopping { Resolve-Tracker -Ref (ConvertFrom-TicketRef '12') -Explicit 'jira' -Remote $script:GhRemote }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'usage' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'ado-org-precedence' {
+    Assert-Equal 'from-url' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'https://dev.azure.com/from-url/P/_workitems/edit/1') -AdoOrg 'from-flag' -Remote $script:GhRemote) 'URL first'
+    Assert-Equal 'from-flag' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'AB#1') -AdoOrg 'from-flag' -Remote $script:AdoRemote) '-AdoOrg next'
+    Assert-Equal 'your-org' (Resolve-AdoOrg -Ref (ConvertFrom-TicketRef '1') -Remote $script:AdoRemote) 'origin last'
+}
+
+Invoke-Case 'ado-org-missing-on-github-refused' {
+    $outcome = Invoke-Stopping { Resolve-AdoOrg -Ref (ConvertFrom-TicketRef 'AB#22744') -Remote $script:GhRemote }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'no-ado-org' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'workitem-ab-from-github-repo' {
+    # The work item is read from the org -AdoOrg names, with the repository on GitHub.
+    Reset-Fake
+    $script:Responses['GET https://dev.azure.com/boards-org/_apis/wit/workitems/22744?*'] =
+        New-Response 200 ([pscustomobject]@{ id = 22744; fields = [pscustomobject]@{ 'System.WorkItemType' = 'Bug'; 'System.Title' = 't'; 'System.TeamProject' = 'P' } })
+    $repo = New-GitRepo 'https://github.com/someone/Contoso.Orders.git'
+    Push-Location -LiteralPath $repo
+    try { $item = Get-WorkItem -Id 'AB#22744' -AdoOrg 'boards-org' } finally { Pop-Location }
+    Assert-Equal 'ado' (Get-Field $item 'tracker') 'tracker'
+    Assert-Equal 'https://dev.azure.com/boards-org/P/_workitems/edit/22744' (Get-Field $item 'url') 'url'
+}
+
+# --- cycle 17: GitHub --------------------------------------------------------------------------
+
+# The fake gh transport. Responses are matched with -like against the api path.
+$script:GhCalls = [System.Collections.Generic.List[string]]::new()
+$script:GhResponses = [ordered] @{}
+
+function Reset-GhFake {
+    $script:GhCalls.Clear()
+    $script:GhResponses.Clear()
+}
+
+function Invoke-GhApi {
+    param([string] $Path)
+    $script:GhCalls.Add($Path)
+    foreach ($pattern in $script:GhResponses.Keys) {
+        if ($Path -like $pattern) { return $script:GhResponses[$pattern] }
+    }
+    throw "the fake gh transport has no response for $Path"
+}
+
+Invoke-Case 'gh-kind-ok' { Assert-Equal 'ok' (Get-GhResponseKind -ExitCode 0 -Stderr '') 'kind' }
+
+Invoke-Case 'gh-kind-no-login' {
+    Assert-Equal 'login-expired' (Get-GhResponseKind -ExitCode 4 -Stderr 'To get started with GitHub CLI, please run:  gh auth login') 'kind'
+}
+
+Invoke-Case 'gh-kind-bad-token' { Assert-Equal 'login-expired' (Get-GhResponseKind -ExitCode 1 -Stderr 'gh: Bad credentials (HTTP 401)') 'kind' }
+
+Invoke-Case 'gh-kind-404' { Assert-Equal 'not-found' (Get-GhResponseKind -ExitCode 1 -Stderr 'gh: Not Found (HTTP 404)') 'kind' }
+
+Invoke-Case 'gh-kind-500' { Assert-Equal 'error' (Get-GhResponseKind -ExitCode 1 -Stderr 'gh: Server Error (HTTP 500)') 'kind' }
+
+Invoke-Case 'gh-repo-default-branch' {
+    Reset-GhFake
+    $script:GhResponses['repos/someone/Contoso.Orders'] = New-Response 200 ([pscustomobject]@{ default_branch = 'trunk' })
+    $repo = New-GitRepo 'git@github.com:someone/Contoso.Orders.git'
+    Push-Location -LiteralPath $repo
+    try { $info = Get-Repository } finally { Pop-Location }
+    Assert-Equal 'github' (Get-Field $info 'host') 'host'
+    Assert-Equal 'trunk' (Get-Field $info 'defaultBranch') 'defaultBranch'
+}
+
+function New-Issue([hashtable] $Extra = @{}) {
+    $issue = [ordered]@{
+        number    = 12
+        title     = 'Export drops the last row'
+        state     = 'open'
+        body      = '## Steps'
+        html_url  = 'https://github.com/someone/Contoso.Orders/issues/12'
+        labels    = @([pscustomobject]@{ name = 'bug' }, [pscustomobject]@{ name = 'p1' })
+        assignees = @([pscustomobject]@{ login = 'dev1' })
+        milestone = [pscustomobject]@{ title = 'v2' }
+        type      = $null
+    }
+    foreach ($key in $Extra.Keys) { $issue[$key] = $Extra[$key] }
+    [pscustomobject] $issue
+}
+
+Invoke-Case 'gh-issue-fields' {
+    Reset-GhFake
+    $script:GhResponses['repos/someone/Contoso.Orders/issues/12'] = New-Response 200 (New-Issue)
+    $repo = New-GitRepo 'https://github.com/someone/Contoso.Orders'
+    Push-Location -LiteralPath $repo
+    try { $item = Get-WorkItem -Id '#12' } finally { Pop-Location }
+    Assert-Equal 'github' (Get-Field $item 'tracker') 'tracker'
+    Assert-Equal 12 (Get-Field $item 'id') 'id'
+    Assert-Equal 'Bug' (Get-Field $item 'type') 'type from the bug label'
+    Assert-Equal 'Export drops the last row' (Get-Field $item 'title') 'title'
+    Assert-Equal '## Steps' (Get-Field $item 'description') 'description is the body'
+    Assert-Equal 'dev1' (Get-Field $item 'assignedTo') 'assignedTo'
+    Assert-Equal 'v2' (Get-Field $item 'milestone') 'milestone'
+    Assert-Equal 'bug p1' "$(Get-Field $item 'labels')" 'labels'
+    Assert-Equal 'https://github.com/someone/Contoso.Orders/issues/12' (Get-Field $item 'url') 'url'
+}
+
+Invoke-Case 'gh-issue-type-wins-over-labels' {
+    Assert-Equal 'Task' (Get-GitHubIssueType (New-Issue @{ type = [pscustomobject]@{ name = 'Task' } })) 'issue type'
+}
+
+Invoke-Case 'gh-issue-type-from-enhancement' {
+    Assert-Equal 'Feature' (Get-GitHubIssueType (New-Issue @{ labels = @([pscustomobject]@{ name = 'enhancement' }) })) 'type'
+}
+
+Invoke-Case 'gh-issue-type-unknown-empty' {
+    Assert-Equal '' (Get-GitHubIssueType (New-Issue @{ labels = @([pscustomobject]@{ name = 'debugging-tools' }) })) 'a label that only contains bug'
+}
+
+Invoke-Case 'gh-issue-is-pull-request-refused' {
+    Reset-GhFake
+    $script:GhResponses['repos/someone/Contoso.Orders/issues/13'] = New-Response 200 (New-Issue @{ number = 13; pull_request = [pscustomobject]@{ url = 'x' } })
+    $outcome = Invoke-Stopping { Get-GitHubIssue -Id 13 -Owner 'someone' -Repo 'Contoso.Orders' }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'is-pull-request' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'gh-issue-not-found' {
+    Reset-GhFake
+    $script:GhResponses['repos/someone/Contoso.Orders/issues/*'] = New-Response 404 $null
+    $outcome = Invoke-Stopping { Get-GitHubIssue -Id 99999 -Owner 'someone' -Repo 'Contoso.Orders' }
+    Assert-Equal 4 $outcome.Exit 'exit code'
+    Assert-Equal 'not-found' (Get-Field $outcome.Payload 'error') 'error'
+}
+
+Invoke-Case 'gh-pr-find-open' {
+    Reset-GhFake
+    $script:GhResponses['repos/someone/Contoso.Orders/pulls?*'] =
+        New-Response 200 @([pscustomobject]@{ number = 41; title = 'existing'; draft = $true; html_url = 'https://github.com/someone/Contoso.Orders/pull/41' })
+    $info = [pscustomobject]@{ host = 'github'; owner = 'someone'; repo = 'Contoso.Orders'; defaultBranch = 'main' }
+    $found = @(Find-GitHubPullRequest -RepoInfo $info -Branch 'bug/12_x')
+    Assert-Equal 1 $found.Count 'open PRs'
+    Assert-Equal 41 (Get-Field $found[0] 'id') 'id'
+    Assert-Equal 'True' (Get-Field $found[0] 'isDraft') 'isDraft'
+    Assert-Equal 'repos/someone/Contoso.Orders/pulls?head=someone%3Abug%2F12_x&state=open' $script:GhCalls[0] 'query'
+}
+
+Invoke-Case 'gh-pr-find-none' {
+    Reset-GhFake
+    $script:GhResponses['repos/someone/Contoso.Orders/pulls?*'] = New-Response 200 $null
+    $info = [pscustomobject]@{ host = 'github'; owner = 'someone'; repo = 'Contoso.Orders'; defaultBranch = 'main' }
+    Assert-Equal 0 @(Find-GitHubPullRequest -RepoInfo $info -Branch 'bug/12_x').Count 'open PRs'
+}
+
+Invoke-Case 'gh-expired-login-exit-3' {
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { return 'SKIP: the GitHub CLI is not on PATH' }
+    $repo = New-GitRepo 'https://github.com/someone/Contoso.Orders.git'
+    $run = Invoke-Ticket -Arguments @('repo') -WorkingDirectory $repo -Environment @{ GH_CONFIG_DIR = (New-TempDir); GH_TOKEN = $null; GITHUB_TOKEN = $null }
+    Assert-Equal 3 $run.Exit "exit code (stdout: $($run.Stdout))"
+    Assert-Equal 'gh auth login' (Get-Field $run.Json 'loginCommand') 'loginCommand'
 }
 
 # --- cycle 15: session-find, the ticket's session and the mode rule ----------------------------
@@ -341,6 +587,13 @@ Invoke-Case 'session-find-plan-refused' {
     Assert-Equal 'mode-refused' (Get-Field $run.Json 'error') 'error'
     Assert-Equal 'plan' (Get-Field $run.Json 'mode') 'mode'
     Assert-Equal $id (Get-Field $run.Json 'session') 'session'
+}
+
+Invoke-Case 'session-find-hash-id' {
+    $id = New-Session 'Contoso.Orders' 'ticket:12' 'implement'
+    $run = Invoke-Ticket -Arguments @('session-find', '-Id', '#12', '-Repo', 'Contoso.Orders')
+    Assert-Equal 0 $run.Exit "exit code (stdout: $($run.Stdout))"
+    Assert-Equal $id (Get-Field (Get-Field $run.Json 'session') 'session') 'session'
 }
 
 Invoke-Case 'session-find-none' {

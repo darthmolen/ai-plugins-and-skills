@@ -106,8 +106,8 @@ Did plan mode just produce a new plan?
           │       so; system-spec-backfill picks those plans up later.
           │    5. If it has delivers:, set each feature it names to Shipped or
           │       Shipped interim in the spec, and run spec-table --fix (system-spec).
-          │    6. Push the branch and raise the PR — ado-pr on Azure DevOps,
-          │       gh pr create on GitHub. A session whose mode withholds push
+          │    6. Push the branch and raise the PR with pr-create (Azure
+          │       DevOps or GitHub). A session whose mode withholds push
           │       (session-workflow's plan, implement or commit; a wave track
           │       runs in commit) stops here, and a session that holds push
           │       (ship, or a wave lead in lead) raises the PR.
@@ -484,7 +484,7 @@ Example: `[FEATURE] auth-refactor phase 1 complete — JWT validation extracted`
 - **One active document per track** in `planning/in-progress/`. Most work is `track: main`, so most of the time this reads as one active plan. If something must start urgently on a track that is already busy, move the current document back to `planning/` with a status note first.
 - **Tracks must be independent.** A document only earns a track of its own if its `Files Expected to Change` set is disjoint from every other in-progress document's. Overlapping work queues, or a wave resolves the overlap (`wave-workflow`); it never runs in parallel as is.
 - **A plan never waits on its own verification.** Development done and going to a PR means the plan completes; the checks that come after the PR are `verify` reminders.
-- **The close hands off to PR raising.** After the plan is in `completed/`, the next step is to push and raise the PR — `ado-pr` on Azure DevOps, `gh pr create` on GitHub — unless the session's mode withholds push. This skill ends at the commit; the PR step owns the pull request.
+- **The close hands off to PR raising.** After the plan is in `completed/`, the next step is to push and raise the PR with `pr-create`, on Azure DevOps or GitHub, unless the session's mode withholds push. This skill ends at the commit; the PR step owns the pull request.
 - **Never delete plan documents.** Move them; the history is the corpus. **Promotion is not deletion** — deleting a stub on promotion is how one plan came to point at a file that did not exist.
 - **A move is two edits.** `git mv`, and the `status:` field. One without the other is exactly the drift the field was introduced to end. It is never three: the filename does not change.
 - **Backlog is not a graveyard.** Each stub should have a `Trigger for Promotion` — if it will never be acted on, move it to `not-implemented/` with a reason rather than leaving it deferred forever.
