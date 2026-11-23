@@ -2,7 +2,7 @@
 
 An AI-in-the-loop, human-in-the-loop adversarial review pipeline for plans and specs. You author the plan in your primary session, hand it off to a second agent (or a second session of the same agent) for adversarial critique, then come back to the original session to walk findings with the author agent + you. The human stays in the loop at every gate: you decide what to accept, merge, or reject before any code is written.
 
-Pairs with the [code review workflow](CODE-REVIEW-WORKFLOW.md). The two pipelines share the same shape (file-system kanban, idempotent skills, multi-agent fan-out) and the same end-state: a spec or branch the human is genuinely confident in.
+Pairs with the [code review workflow](CODE-REVIEW-WORKFLOW.md). The two pipelines share the same shape (file-system kanban, idempotent skills, multi-agent fan-out) and the same end-state: a plan or branch the human is genuinely confident in.
 
 ---
 
@@ -30,7 +30,7 @@ The output is a plan that survived adversarial review **before** anyone wrote co
 
 Use planning mode in whatever harness you're in — Claude Code's `/plan` toggle, the Copilot CLI Chat extension's blue Plan badge, or any equivalent. Planning mode keeps the agent honest: read-only tools, no source edits, focus is the artifact.
 
-### 2. Develop a detailed spec or plan
+### 2. Develop a detailed plan
 
 Author the plan in `planning/in_progress/phase_<name>_<date>.md` (or wherever your project's convention puts it). Spell out:
 
@@ -109,7 +109,7 @@ The reviewed copy is a permanent record — it doesn't move back to `in_progress
 
 ## Handoff to code review
 
-Plan review verifies the *spec*. Code review verifies the *implementation matches the spec, and the implementation is itself well-formed*. They chain naturally:
+Plan review verifies the *plan* and its feature-spec. Code review verifies the *implementation matches the plan, and the implementation is itself well-formed*. They chain naturally:
 
 ```
 plan-send-review → plan-intake-review → plan-receive-review

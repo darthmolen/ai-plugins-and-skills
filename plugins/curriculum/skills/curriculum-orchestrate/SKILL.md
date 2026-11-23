@@ -13,7 +13,7 @@ Coordinates the curriculum pipeline without owning any specialist logic. The con
 
 ## Before anything else
 
-**`learning/` is downstream.** Courses are outputs of this pipeline, never inputs to it. If you find yourself reading a course to write a course, stop — the source is in `documentation/` or another repo.
+**`learning/` is downstream.** Courses are outputs of this pipeline, never inputs to it. If you find yourself reading a course to write a course, stop — the source is in the docs (`docs/` or `documentation/`) of this repo or another.
 
 ## Operations
 
@@ -56,7 +56,7 @@ These are the ones most likely to be rationalized away mid-run:
 
 - **Never publish from an unresolved source revision.** Fail closed.
 - **Never treat a generated instructional example as a documented standard.** If the source did not say it, the course may not assert it.
-- **Never invent a missing procedure.** A documentation gap is a bug to file against `documentation/`, not a hole for the course to paper over. A course that fills the gap locally lies the moment the real procedure lands.
+- **Never invent a missing procedure.** A documentation gap is a bug to file against the source repo's docs (`docs/` or `documentation/`), not a hole for the course to paper over. A course that fills the gap locally lies the moment the real procedure lands.
 - **Never edit source documentation as a side effect.** If the source is wrong, that is a separate change with its own review.
 - **Never let a specialist publish directly.**
 

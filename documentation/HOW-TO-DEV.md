@@ -8,6 +8,8 @@ How to develop and contribute skills for AI-Plugins-And-Skills.
 - **Git** with access to github [ai-plugins-and-skills](https://github.com/darthmolen/ai-plugins-and-skills) repository
 - Familiarity with the [Agent Skills specification](https://agentskills.io/specification)
 
+To run the skills' own scripts and tests you also need what their users need: the .NET 10 SDK for the single-file C# scripts, pwsh 7 for the session and ticket scripts and the hook, and Python 3.11+ for `python-project`. The full list is in the [Claude Code prerequisites](README-CLAUDECODE.md#prerequisites).
+
 ## One-time setup
 
 Point this clone's git hooks at the repo-tracked hook directory so the pre-commit validator runs automatically:
@@ -74,17 +76,52 @@ The `name` must match the directory name. The `description` determines when AI a
 Do not edit these directly — they are rewritten on every run:
 
 - `index.json` — whole file
-- `README.md` — between `<!-- BEGIN SKILLS -->` and `<!-- END SKILLS -->`
+- `README.md` — between each `<!-- SKILLS: <category> -->` and `<!-- END SKILLS: <category> -->` pair (the flavor text above each block is hand-written)
 - `documentation/ARCHITECTURE.md` — code block under `## Directory Structure`
 
 ## Adding a New Skill
 
 1. Create a directory: `skills/<skill-name>/`
-2. Create `SKILL.md` with the required frontmatter (`name`, `description`, and `metadata.category`)
+2. Create `SKILL.md` with the required frontmatter (`name`, `description`, and `metadata.category`). The `description` must stay within 1024 characters and contain no `<` or `>`, and the body within 500 lines; move longer material into a sibling reference `.md` and link it
 3. Make sure the README has a `<!-- SKILLS: <category> -->` / `<!-- END SKILLS: <category> -->` block for that category -- the build fails on a category with no block
 4. Run `python3 scripts/build_index.py`
 5. Verify the skill appears in `index.json` and the README skills table
 6. Commit -- the hook will re-run the build if you forgot step 4
+
+When a change alters what the plugin ships, bump `version` in `.claude-plugin/plugin.json` and the matching entry in `.claude-plugin/marketplace.json`, so `claude plugin update` picks it up.
+
+### Naming a skill
+
+A domain skill is named `<subject>-<role>`, with one of three roles:
+
+| Role | Covers | Examples |
+|---|---|---|
+| `-architect` | Project setup, tooling, layout, and design decisions made before or across the code | `angular-architect`, `python-architect` |
+| `-developer` | Writing application code: idioms, patterns, and pitfalls | `angular-developer`, `python-developer`, `csharp-quality-developer` |
+| `-engineer` | Infrastructure and platform work: provisioning, networking, identity, infrastructure as code, pipelines | `azure-infra-engineer` |
+
+Not `-pro`, `-expert` or `-specialist`. The test for `-developer` versus `-engineer` is what the skill's output runs as: code that ships inside an application is `-developer`, and code that builds, deploys or provisions its environment is `-engineer`. Tool skills are named for what they do (`sql-query`, `bulk-rename`), and workflow skills for the process they run (`plan-workflow`, `session-workflow`). [VOCABULARY.md](VOCABULARY.md#skill-names-architect-developer-engineer) has the reasoning.
+
+Renaming a skill breaks every prompt and instruction file that names it, so keep no alias that competes with the new name. When the old name must keep working for a while, ship a shim whose `description` says only that the name is deprecated and which skill to invoke, as `spec-tier` does for `plan-tier`.
+
+### Scripts, tests, commands and hooks
+
+A skill's scripts and their tests live inside the skill directory, because a skill is read from wherever it was installed. Run a skill's tests before committing a change to its scripts:
+
+```bash
+dotnet run skills/plan-workflow/scripts/plan-doc.cs -- --selftest
+pwsh -NoProfile -File skills/session-workflow/test/Test-SessionScript.ps1
+pwsh -NoProfile -File skills/ticket-start/test/Test-TicketScript.ps1
+python -I -m pytest skills/python-project/scripts
+```
+
+Three Claude Code features live outside `skills/` and are not validated by `build_index.py`:
+
+- `agents/*.md` -- agents that preload skills (`wave-lead`, `wave-track`)
+- `commands/*.md` -- slash commands that hand off to a skill (`python-project`)
+- `hooks/hooks.json` -- hooks the plugin registers, with their scripts beside it (`wave-session-title.ps1`). Keep a hook cheap: filter in the shell command first, so the interpreter starts only for the prompts it handles, and never block a prompt on failure
+
+Each must wrap a skill that works on its own, because Copilot CLI and VS Code Copilot load the skill and nothing else.
 
 ## Multiple plugins
 
