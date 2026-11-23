@@ -1,25 +1,25 @@
 ---
 name: code-send-review
-description: Use when queueing a slice of a branch for code review — builds a slice spec from a commit range, focus areas, and plan-doc refs, and drops it in planning/code-reviews/needs-review/ for the intake loop to pick up
+description: Use when queueing a slice of a branch for code review — builds a slice from a commit range, focus areas, and plan-doc refs, and drops it in planning/code-reviews/needs-review/ for the intake loop to pick up
 metadata:
   category: review-helpers
   order: 20
 ---
 # Send Code Slice for Review
 
-Create a slice-review spec from the supplied commit range and focus areas, and drop it in the project's code-review queue so the intake skill can dispatch a reviewer.
+Create a slice from the supplied commit range and focus areas, and drop it in the project's code-review queue so the intake skill can dispatch a reviewer.
 
 **Core principle:** Copy nothing, fabricate nothing. Every SHA, commit, and plan-doc reference must be verified against git and the filesystem before the file is written.
 
 ## Naming Convention
 
-Slice spec filenames follow this format strictly:
+Slice filenames follow this format strictly:
 
 ```
 YYYY-MM-DD-code-review-<initiative>-slice-NN-<slug>.md
 ```
 
-- `YYYY-MM-DD` — today's date when the spec is queued.
+- `YYYY-MM-DD` — today's date when the slice is queued.
 - `code-review` — literal infix identifying the artifact type. Do not shorten or omit.
 - `<initiative>` — kebab-case slug identifying the parent initiative / meta-plan (`chat-history-3-0`, `state-machine-recovery`). Slice numbering is **sequential within an initiative**, not across the queue. Different initiatives can reuse slice numbers; the initiative slug is what makes the filename globally unique.
 - `slice-NN` — literal infix; `NN` is the two-digit slice number (sequential within the initiative).
@@ -27,34 +27,54 @@ YYYY-MM-DD-code-review-<initiative>-slice-NN-<slug>.md
 
 Example: `2026-04-27-code-review-chat-history-3-0-slice-01-preflight-skeleton.md`
 
-**Legacy form (still honored on the read path):** `YYYY-MM-DD-code-review-slice-NN-<slug>.md` — files written before the `<initiative>` segment was introduced. The intake skill matches both forms; new files written by `code-send-review` always use the new form with an explicit initiative.
+**Legacy form (read only):** `YYYY-MM-DD-code-review-slice-NN-<slug>.md`. These are files written before the `<initiative>` segment existed. The intake skill still reads them, but this skill never writes one.
 
-This naming is enforced by `code-intake-review` — files that don't match either form are not picked up.
+`code-intake-review` enforces this naming and ignores files that match neither form.
 
 ## Frontmatter Convention
 
-Every slice spec carries a YAML frontmatter block. Required fields:
+A slice is a planning document. The frontmatter contract (`plan-writing-syntax`) and its validator (`plan-doc.cs validate`) cover it, the same way they cover a plan. Required fields:
 
 ```yaml
 ---
-type: code-review-slice    # discriminator — required
-initiative: <slug>         # required for new files — kebab-case (chat-history-3-0)
+kind: slice                # the planning contract's kind; validated
+status: queued             # queued | reviewing | failed | reviewed | triaging | completed
+date: YYYY-MM-DD           # the day the slice was queued
+initiative: <slug>         # required; kebab-case (chat-history-3-0)
+parent_plan: <name>        # required; the meta-plan's NAME, never its path
 slice: 01                  # zero-padded two-digit; sequential within initiative
-name: state-machine-foundation
+title: state-machine-foundation
 branch: feature/state-machine
 base_sha: <full SHA>
 head_sha: <full SHA>
 diff_stat: "<N files, +M/-L>"
-plan_docs: []              # zero or more paths
-parent_plan: <path>        # optional: link to the meta-plan that spawned this slice
-status: queued             # queued | reviewing | reviewed | failed | triaging | completed
+plan_docs: []              # zero or more plan NAMES under planning/
 status_updated: <ISO 8601> # set on every status change
 status_note: ""            # optional human-readable reason; populated on failed/triaging
-created: YYYY-MM-DD
 ---
 ```
 
-`type: code-review-slice` is the discriminator that prevents the plan-* intake from picking up the file. It MUST be present.
+**`kind: slice` is what keeps the plan-* intake from picking up the file.** It replaces the
+retired `type: code-review-slice`. The validator checks `status:` against the directory:
+
+| status | directory |
+|---|---|
+| `queued` | `planning/code-reviews/needs-review/` |
+| `reviewing`, `failed` | `planning/code-reviews/needs-review/in-progress/` |
+| `reviewed`, `triaging` | `planning/code-reviews/needs-review/reviewed/` |
+| `completed` | `planning/code-reviews/needs-review/completed/` |
+
+**References are names, never paths.** A name is the filename minus `feature_`/`bug_`/`stub_` and
+`.md`. The meta-plan moves from `planning/` to `in-progress/` to `completed/` while its slices are
+open. A stored path would go stale on the first move, but a name does not. The validator resolves
+`parent_plan:` (to a plan) and each `plan_docs:` entry (to a plan or stub). It fails a path with
+`PATH-NOT-NAME` and an unknown name with `UNRESOLVED`.
+
+Slices run without a meta-plan when this skill is used directly, as a manual escape hatch. Even
+then, `parent_plan:` must name a plan, so write or pick one first. A single-slice review is still
+a plan. Plans that live outside the repository, such as `~/.claude/plans/*.md` or Copilot session
+state, cannot be resolved by name. Cite those by path in the body's *Plan docs implemented*
+section, not in `plan_docs:`.
 
 `initiative` scopes slice numbering. A single branch / parent meta-plan should pick a stable slug (e.g. `chat-history-3-0`) and reuse it for every slice in that initiative. Different initiatives are independent — `chat-history-3-0/slice-01` and `state-machine-recovery/slice-01` can coexist.
 
@@ -73,7 +93,8 @@ Required from the user (or derivable from context):
 | `slice_name` | Kebab-case short label (`state-machine-foundation`, `sse-broker`). |
 | `base_sha` | The commit *before* the slice starts (parent of the first slice commit). |
 | `head_sha` | The last commit of the slice. |
-| `plan_docs` | Zero or more paths to plan markdown files this slice implements. |
+| `parent_plan` | The name of the meta-plan (`code-review-<initiative>_<date>`) or other plan this slice reviews for. |
+| `plan_docs` | Zero or more names of plans under `planning/` that this slice implements. |
 | `focus_areas` | Free-form bullets — what the reviewer should pay attention to. |
 
 If anything is missing, ask before writing. **Especially ask about `initiative`** — guessing this wrong means slices land under the wrong umbrella and synthesis groups them incorrectly.
@@ -89,11 +110,19 @@ git diff --stat <base_sha>..<head_sha> | tail -1
 
 If `rev-parse` fails, the slice cannot be created. Stop and ask.
 
-Record the exact commit list and the diff-stat summary — both land in the spec.
+Record the exact commit list and the diff-stat summary — both land in the slice.
 
-### Step 3: Verify Plan-Doc Paths
+### Step 3: Verify the Plan Names
 
-For each `plan_docs` entry, confirm the file exists. If it doesn't, stop — a broken reference poisons the review.
+For `parent_plan` and each `plan_docs` entry, confirm that exactly one document under `planning/`
+has that name:
+
+```bash
+ls planning/{,in-progress/,completed/,backlog/,blocked/,not-implemented/}{,feature_,bug_,stub_}<name>.md 2>/dev/null
+```
+
+Zero matches, or more than one, means stop. A broken reference poisons the review, and the
+validator would fail it anyway.
 
 ### Step 4: Check for Collisions
 
@@ -106,11 +135,11 @@ ls planning/code-reviews/needs-review/reviewed/*-code-review-<initiative>-slice-
 ls planning/code-reviews/needs-review/completed/*-code-review-<initiative>-slice-<NN>-*.md 2>/dev/null
 ```
 
-If `<initiative>/<NN>` already exists anywhere in the queue, stop. Ask whether to pick a new slice number, supersede the existing spec, or correct the initiative slug.
+If `<initiative>/<NN>` already exists anywhere in the queue, stop. Ask whether to pick a new slice number, supersede the existing slice, or correct the initiative slug.
 
-**Legacy collision check (ambient).** Also confirm the slice number doesn't clash with a *legacy-format* file (no initiative segment) for the same kind of work. Run `ls planning/code-reviews/needs-review/{,in-progress/,reviewed/,completed/}*-code-review-slice-<NN>-*.md 2>/dev/null` once. If any matches appear, scan their `parent_plan` frontmatter — if the legacy slice belongs to a *different* initiative, it's fine to reuse; if it's the same initiative, the legacy slice must be migrated to the new naming first.
+**Legacy collision check.** Also run `ls planning/code-reviews/needs-review/{,in-progress/,reviewed/,completed/}*-code-review-slice-<NN>-*.md 2>/dev/null` once. A match is a legacy slice: it has no initiative segment, probably no `kind:`, and may hold a path in `parent_plan`. If it belongs to a different effort, reusing the number is fine. If it belongs to this one, migrate it first: add `kind: slice`, `status:`, `date:` and `initiative:`, rename it to the initiative form, and turn `parent_plan:` and `plan_docs:` into names.
 
-### Step 5: Write the Slice Spec
+### Step 5: Write the Slice
 
 Filename: `planning/code-reviews/needs-review/YYYY-MM-DD-code-review-<initiative>-slice-NN-<slug>.md` per the Naming Convention above.
 
@@ -118,21 +147,21 @@ Use the template below verbatim. Fill all placeholders with verified data. Do NO
 
 ```markdown
 ---
-type: code-review-slice
+kind: slice
+status: queued
+date: <YYYY-MM-DD>
 initiative: <initiative_slug>
+parent_plan: <meta-plan name>
 slice: <NN>
-name: <slice_name>
+title: <slice_name>
 branch: <current_branch>
 base_sha: <base_sha>
 head_sha: <head_sha>
 diff_stat: "<N files, +M/-L>"
 plan_docs:
-  - <path>
-parent_plan: <path or omit>
-status: queued
+  - <plan name>
 status_updated: <ISO 8601 timestamp at write time>
 status_note: ""
-created: <YYYY-MM-DD>
 ---
 
 # Slice <NN>: <Human-Readable Title>
@@ -149,7 +178,8 @@ created: <YYYY-MM-DD>
 
 ### Plan docs implemented
 
-- [<basename>](<path>) — <one-line description>
+- `<plan name>` — <one-line description>
+- `~/.claude/plans/<file>.md` — <for a plan outside the repository, which cannot be named>
 
 (or "None" if no plan doc)
 
@@ -187,10 +217,12 @@ Do not mark the slice "done" — the intake loop will do that.
 ## Do Not
 
 - Guess at SHAs or commit titles — always verify via git.
-- Write a spec that references plan docs that don't exist.
+- Write a slice that references plan docs that don't exist.
+- Write a path where a name belongs (`parent_plan`, `plan_docs`).
+- Write `type: code-review-slice`. It is retired, and `kind: slice` replaces it.
 - Reuse a slice number that's already in the queue **for the same initiative**.
 - Invent a new initiative slug for work that belongs to an existing one — initiative slugs persist for the life of the meta-plan.
-- Edit the spec after it's in `needs-review/` — let intake move it first.
+- Edit the slice after it's in `needs-review/` — let intake move it first.
 - Add findings yourself — that's intake's job.
 
 ## Red Flags
@@ -198,4 +230,4 @@ Do not mark the slice "done" — the intake loop will do that.
 - "I'll fill the SHA in later." → Stop. Verify first or don't write.
 - "The plan doc is close enough." → Stop. Exact path or ask.
 - "Slice 03 is already in reviewed/ but this is different work." → That's exactly when to use a different `initiative` slug. The new slice can still be `slice-01` under its own initiative.
-- "I'll skip the initiative for now and add it later." → Stop. Ask the user for the slug; do not write the spec without it.
+- "I'll skip the initiative for now and add it later." → Stop. Ask the user for the slug; do not write the slice without it.

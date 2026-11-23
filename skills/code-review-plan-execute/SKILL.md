@@ -24,14 +24,16 @@ Second punch-in command. Orchestrates the full review pipeline: pre-flight → s
 Search order:
 
 ```bash
-# 1. Self-reviewed meta-plans
-find planning/ -name "*.md" -not -path "*/needs-review/*"
-# filter to those with frontmatter type: code-review-plan
+# 1. Self-reviewed meta-plans: queued in planning/, or already running in in-progress/
+grep -l "^type: code-review-plan" planning/*.md planning/in-progress/*.md 2>/dev/null
+# keep those with kind: plan
 
 # 2. Adversarially-reviewed meta-plans
-ls planning/needs-review/completed/*.md
-# filter to those with frontmatter type: code-review-plan
+grep -l "^type: code-review-plan" planning/needs-review/completed/*.md 2>/dev/null
 ```
+
+A meta-plan in `in-progress/` is a run already under way, so resume it. A meta-plan in
+`completed/` is finished, so never execute it again. Run `code-review-plan-create` for a new pass.
 
 **Why self-reviewed comes first.** The meta-plan the author wrote and checked names the major
 cases: the slices, focus areas and design intents that matter most for this branch. The
@@ -50,7 +52,9 @@ Match logic:
 
 #### Source-vs-Audit resolution
 
-When the chosen candidate is in `planning/`, also check whether a same-slug, same-`type: code-review-plan` audit copy exists in `planning/needs-review/completed/`. If one does, diff them:
+When the chosen candidate is in `planning/` or `in-progress/`, also check whether an audit copy
+exists in `planning/needs-review/completed/`: a `kind: review` whose `reviews:` names this
+meta-plan. If one does, diff them:
 
 - **No audit copy:** the plan was never sent for adversarial review. Use the source.
 - **Identical:** use the source. The review changed nothing.
@@ -62,7 +66,7 @@ The audit copy is never edited and never executed while a source exists. `plan-r
 
 For the chosen meta-plan, validate:
 
-1. **Frontmatter sanity:** `type: code-review-plan`, `branch`, `base_sha`, `head_sha`, `slug`, `slice_count` all present.
+1. **Frontmatter sanity:** `kind: plan`, `type: code-review-plan`, `initiative`, `branch`, `base_sha`, `head_sha`, `slice_count` all present. An older meta-plan with `slug:` and no `kind:` fails here. Stop and tell the user to migrate it: add `kind: plan`, `status:` and `date:`, rename `slug:` to `initiative:`, and rename the file to `code-review-<initiative>_<date>.md`.
 2. **Slice table parseable:** matches the meta-plan's declared `slice_count`.
 3. **SHAs verify:**
    ```bash
@@ -74,24 +78,41 @@ For the chosen meta-plan, validate:
    ```
    Any failure = the branch moved destructively (force-push, rebase, etc.); abort with clear message.
 4. **Branch state:** working tree clean, not mid-rebase, not detached. Warn but proceed if working tree has untracked-only changes (uncommitted modifications = abort).
-5. **Plan docs referenced exist on disk** for every slice row.
-6. **Collision check (per-slice):** for each slice number in the meta-plan, scan `planning/code-reviews/needs-review/{,in-progress/,reviewed/,completed/}` for an existing slice spec. Allowed cases:
+5. **Plan docs named in every slice row resolve**, each to exactly one plan or stub under `planning/`.
+6. **Collision check (per-slice):** for each slice number in the meta-plan, scan `planning/code-reviews/needs-review/{,in-progress/,reviewed/,completed/}` for an existing `*-code-review-<initiative>-slice-<NN>-*` slice. Allowed cases:
    - **No file exists:** OK, will be seeded.
-   - **File exists with `parent_plan` matching this meta-plan:** OK, **resume** mode (skip seeding for this slice; existing status determines what happens next).
-   - **File exists with `parent_plan` matching a *different* meta-plan, or no `parent_plan`:** ABORT — collision is unresolvable without user direction.
+   - **File exists with `parent_plan` naming this meta-plan:** OK, **resume** mode (skip seeding for this slice; existing status determines what happens next).
+   - **File exists with `parent_plan` naming a *different* meta-plan, or no `parent_plan`:** ABORT — collision is unresolvable without user direction.
 
 Print the pre-flight summary and ask user "Proceed? [y/N]".
 
+### Step 2a: Put the Meta-Plan on the Board
+
+On the first run, the meta-plan is still `queued` in `planning/`. Starting the review is starting
+the plan, so move it:
+
+```bash
+git mv planning/code-review-<initiative>_<date>.md planning/in-progress/
+```
+
+Then set the frontmatter to `status: in-progress` and `track: code-review-<initiative>`. Change only
+the frontmatter, never the body. `in-progress/` holds one document per track, and the track name
+keeps this review from colliding with the plan being reviewed. Run
+`plan-doc.cs validate --path planning`. On a resumed run the meta-plan is already in
+`in-progress/`, so skip this step.
+
+Its name does not change on the move, so every slice's `parent_plan:` still resolves.
+
 ### Step 3: Seed Slices (skipping resume cases)
 
-Invoke `code-review-seed-slices` on the meta-plan. The seed skill writes one slice spec per row to `planning/code-reviews/needs-review/` with `status: queued` (skipping any that already exist from resume cases).
+Invoke `code-review-seed-slices` on the meta-plan. The seed skill writes one slice per row to `planning/code-reviews/needs-review/` with `status: queued` (skipping any that already exist from resume cases).
 
 Stream chat output:
 - "Seeded N slices in `needs-review/` (M skipped — already present from prior run)."
 
 ### Step 4: Review Loop
 
-Read all slice specs across `needs-review/`, `in-progress/`, `reviewed/`, `completed/` matching the meta-plan's `slug`. Process each by status:
+Read all slices across `needs-review/`, `in-progress/`, `reviewed/`, `completed/` whose `parent_plan` names this meta-plan. Process each by status:
 
 Slices are independent by construction: each has its own SHA range, each reviewer only reads
 (`git diff base..head`), and each writes only its own slice file. So the loop runs in two passes.
@@ -120,7 +141,7 @@ For each slice in (numerical order from meta-plan):
 
 ```
 1. Claim every slice in the dispatch set before dispatching any of them:
-   mv planning/code-reviews/needs-review/<file> planning/code-reviews/needs-review/in-progress/<file>
+   git mv planning/code-reviews/needs-review/<file> planning/code-reviews/needs-review/in-progress/<file>
    status: reviewing
    status_updated: <ISO 8601 now>
    status_note: ""
@@ -188,21 +209,21 @@ slices) are checked here, after all slices have come back, not between slices. B
 run in parallel, nothing is lost by checking them late. When a rule has tripped, say so above the
 prompt so the user can decide whether synthesis is still worth running.
 
-- **y:** invoke `code-synthesize-reviews` → produces `planning/code-reviews/SYNTHESIS.md`. Report path + open-finding totals.
+- **y:** invoke `code-synthesize-reviews`. It writes a new `planning/code-reviews/YYYY-MM-DD-code-review-<initiative>-synthesis-NN.md` and supersedes the previous one. Report the path and the open-finding totals.
 - **N or skip:** stop here, leave a chat note: "Synthesis skipped. Run `code-synthesize-reviews` later when you're ready."
 
-The checkpoint is **mandatory** — never auto-synthesize without user confirmation. This is the user's chance to spot a degenerate run (e.g., 8/8 slices failed) before generating a misleading SYNTHESIS.md.
+The checkpoint is **mandatory** — never auto-synthesize without user confirmation. This is the user's chance to spot a degenerate run (e.g., 8/8 slices failed) before writing a misleading synthesis.
 
 ### Step 6: Notify
 
 Final chat-only summary:
 
 ```
-Code review run complete for <meta-plan slug>.
+Code review run complete for <meta-plan name>.
 - Slices reviewed:  <N>
 - Slices failed:    <M>
 - Open findings:    <C/I/M>
-- SYNTHESIS.md:     <path or "skipped">
+- Synthesis:        <path or "skipped">
 
 Next step: run `code-review-apply` to triage findings.
 ```
@@ -221,7 +242,8 @@ If any slice failed, surface the per-slice reasons in the summary — the user n
 - **Apply findings.** That's `code-review-apply`'s job.
 - **Decide whether a finding is valid.** That's the developer's call during apply.
 - **Auto-retry failed slices.** Failure indicates a problem the user should look at before re-running.
-- **Modify the meta-plan.** The meta-plan is read-only here.
+- **Modify the meta-plan's body.** Execute only moves it to `in-progress/` and edits its frontmatter for that move (Step 2a). The plan's content belongs to its author.
+- **Complete the meta-plan.** `code-review-apply` does that when the last slice is triaged.
 - **Run on its own loop.** This is a foreground command; user invokes when they're ready to drive a review pass.
 
 ## Do Not
@@ -230,7 +252,7 @@ If any slice failed, surface the per-slice reasons in the summary — the user n
 - Auto-retry `failed` slices without user direction.
 - Re-seed a slice that already has `parent_plan` matching this meta-plan (that's a duplication bug).
 - Cancel the other reviewers when one slice fails — let them finish and surface the failure in the summary.
-- Touch the meta-plan file (read-only).
+- Edit the meta-plan's body. Only the Step 2a board move touches the file.
 
 ## Red Flags
 

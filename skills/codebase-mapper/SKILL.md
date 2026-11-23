@@ -1,6 +1,6 @@
 ---
 name: codebase-mapper
-description: "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Writes the map to documentation/CODEBASE-MAP.md and a short pointer to it in CLAUDE.md, so the map is read on demand instead of loaded every session. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project."
+description: "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Writes the map to CODEBASE-MAP.md in the repo's docs folder (documentation/ or docs/) and a short pointer to it in CLAUDE.md, so the map is read on demand instead of loaded every session. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project."
 allowed-tools: Read Write Edit Bash Glob Grep
 metadata:
   category: tools
@@ -168,7 +168,7 @@ Files scanned: 142
 Classes mapped: 47
 Methods mapped: 312
 
-Map:     documentation/CODEBASE-MAP.md  (~450 tokens, read on demand)
+Map:     documentation/CODEBASE-MAP.md  (~450 tokens, read on demand; docs/ if that is the repo's docs folder)
 Pointer: CLAUDE.md                      (~50 tokens, loaded every session)
 
 Markers: <!-- CODEBASE-MAP:AUTO-START/END -->
@@ -178,6 +178,8 @@ Re-run this skill anytime to update.
 ---
 
 ## Output Format
+
+The examples below show a repo that uses `documentation/`. In a `docs/` repo, the paths read `docs/CODEBASE-MAP.md`.
 
 **CLAUDE.md** gets only the pointer:
 
@@ -191,7 +193,7 @@ If it disagrees with the code, trust the code and use Grep/Glob.
 <!-- CODEBASE-MAP:AUTO-END -->
 ```
 
-**documentation/CODEBASE-MAP.md** holds the map, in a compact, scannable format optimized for LLM consumption:
+**CODEBASE-MAP.md** holds the map, in a compact, scannable format optimized for LLM consumption:
 
 ```markdown
 # Codebase Map

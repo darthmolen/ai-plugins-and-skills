@@ -121,6 +121,12 @@ detection is an open question specifically for LLM-generated suites.
 - **It cannot mutate itself.** `dotnet run` holds a lock on the compiled assembly, so a nested run
   of the same script fails to build. The harness reports this correctly as `BUILD-KILLED`. To mutate
   `mutate.cs`, copy it elsewhere and mutate the copy.
+- **A running isolated environment can hold the worktree's files.** Where a session's environment
+  runs a process from the worktree's build output, the rebuild in `--test-cmd` cannot overwrite the
+  locked assembly, and the harness reports `BUILD-KILLED`. Where it mounts the source with a file
+  watcher, the environment runs the mutant until the revert. Stop that process before seeding, as
+  local guidance describes, and start it again after the revert. See `test-filter-development`'s
+  [`isolated-environments.md`](../test-filter-development/isolated-environments.md).
 - **Test-name extraction is per-runner.** MTP/MSTest — both the direct-binary shape and the
   `error test failed: Name (85ms):` shape `dotnet test` emits — plus VSTest, xUnit, NUnit,
   Jest/Vitest, pytest and a generic `FAIL <name>` shape. An unrecognized runner still gives a
