@@ -1,0 +1,16 @@
+{
+  "description": "Names wave sessions (ai-plugins-and-skills:wave-workflow). Bash filters first, so pwsh starts only for a wave-workflow prompt.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "IFS= read -r -d '' input; case \"$input\" in *ai-plugins-and-skills:wave-workflow*) printf '%s' \"$input\" | pwsh -NoProfile -NonInteractive -File \"${CLAUDE_PLUGIN_ROOT}/hooks/wave-session-title.ps1\";; esac; exit 0",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

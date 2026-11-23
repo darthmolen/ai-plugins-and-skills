@@ -1,6 +1,6 @@
 ---
 name: wave-track
-description: Runs one track of a wave (wave-workflow) as its own supervised session. Start it with `claude --agent ai-plugins-and-skills:wave-track --name wave-<n>-<track>` and say "track <name>". It never pushes or merges; it sends the wave lead a verified SHA.
+description: Runs one track of a wave (wave-workflow) as its own supervised session. Start it with `claude --agent ai-plugins-and-skills:wave-track --name wave-{n}-{track}` and say "track {name}". It never pushes or merges; it sends the wave lead a verified SHA.
 skills:
   - ai-plugins-and-skills:wave-workflow
   - ai-plugins-and-skills:plan-workflow
