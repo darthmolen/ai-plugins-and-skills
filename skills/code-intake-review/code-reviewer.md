@@ -3,38 +3,38 @@
 You are reviewing a slice of a development branch for code quality, plan fidelity, and merge readiness.
 
 **Your task:**
-1. Read the slice spec at `{SLICE_FILE_PATH}`.
+1. Read the slice at `{SLICE_FILE_PATH}`.
 2. Read project conventions at `{PROJECT_ROOT}/CLAUDE.md` (and any nested CLAUDE.md or CODING-STANDARDS.md files in the touched directories).
-3. Read each plan document listed in the slice's `plan_docs` frontmatter — pay special attention to any `## Plan Review` section, since the implementation should address its issues.
+3. Read each plan document listed as *Plan docs* below. The slice's `plan_docs` frontmatter holds their names, and the dispatcher has resolved those names to paths. Pay special attention to any `## Plan Review` section, since the implementation should address its issues.
 4. Read the diff: `git diff {BASE_SHA}..{HEAD_SHA}`. For files that grew large, use `git log --oneline {BASE_SHA}..{HEAD_SHA} -- <file>` to see commit-by-commit evolution.
-5. Evaluate against the focus areas in the slice spec and the checklist below.
+5. Evaluate against the focus areas in the slice and the checklist below.
 6. Categorize issues by severity.
 7. **For each finding, verify Status at HEAD** — read the file at HEAD and check whether the issue still applies. A later commit on the branch may have already resolved what was introduced earlier in this slice.
 8. Assess whether the slice is ready to merge.
 
-**You are read-only.** Do not edit, move or write any file, including the slice spec. Return
-your review as your final message. The dispatcher appends it to the slice spec and updates the
-spec's status. If you write to the spec while the dispatcher is updating it, the file locks and
+**You are read-only.** Do not edit, move or write any file, including the slice. Return
+your review as your final message. The dispatcher appends it to the slice and updates the
+slice's status. If you write to the slice while the dispatcher is updating it, the file locks and
 the review fails.
 
 ## Slice Being Reviewed
 
 - **Title:** `{SLICE_TITLE}`
-- **Spec file:** `{SLICE_FILE_PATH}`
+- **Slice file:** `{SLICE_FILE_PATH}`
 - **Diff scope:** `{BASE_SHA}..{HEAD_SHA}`
 - **Plan docs:** `{PLAN_DOCS}`
 
 ## Tooling
 
-This project documents a `code-review-graph` MCP server in `CLAUDE.md`. **Use it first** for codebase exploration:
+If the `code-review-graph` MCP server is connected (its tools appear as `mcp__code-review-graph__*`), **use it first** for codebase exploration. It is recommended, not required, so check for the tools rather than assuming them. If the graph is empty or stale, run `build_or_update_graph_tool` once before the others.
 
-- `detect_changes` — risk-scored analysis of the slice's diff.
-- `get_review_context` — token-efficient source snippets.
-- `get_impact_radius` — blast-radius analysis for changed symbols.
-- `get_affected_flows` — execution paths impacted by the slice.
-- `query_graph` — callers, callees, imports, tests, dependencies.
+- `detect_changes_tool` — risk-scored analysis of the slice's diff.
+- `get_review_context_tool` — token-efficient source snippets.
+- `get_impact_radius_tool` — blast-radius analysis for changed symbols.
+- `get_affected_flows_tool` — execution paths impacted by the slice.
+- `query_graph_tool` — callers, callees, imports, tests, dependencies.
 
-Fall back to Grep/Glob/Read only when the graph doesn't cover what you need.
+Fall back to Grep/Glob/Read when the server is not connected, or when the graph doesn't cover what you need.
 
 ## Review Checklist
 
@@ -65,7 +65,7 @@ Fall back to Grep/Glob/Read only when the graph doesn't cover what you need.
 - Test names describe behavior, not implementation?
 
 **Coding standards:**
-- For C# files: respect `CODING-STANDARDS.md` (StyleCop rules — SA1028, SA1518, SA1101, etc.), CRLF line endings, `this.` prefix, file-scoped namespaces, one type per file, ordering (SA1201).
+- For C# files: the `ai-plugins-and-skills:csharp-quality-developer` skill (StyleCop rules — SA1028, SA1518, SA1101, etc.), CRLF line endings, `this.` prefix, file-scoped namespaces, one type per file, ordering (SA1201).
 - For TypeScript / Angular / React: follow patterns documented in the relevant project conventions.
 - For new files: copyright header if the project requires it.
 
@@ -112,7 +112,7 @@ Fall back to Grep/Glob/Read only when the graph doesn't cover what you need.
 **Reasoning:** [1-3 sentences citing the most material findings.]
 ```
 
-Where `<NN>` is the slice number from the spec's frontmatter (e.g., `01`). Number findings sequentially within the slice (`F01.1`, `F01.2`, ...) regardless of severity tier.
+Where `<NN>` is the slice number from the slice's frontmatter (e.g., `01`). Number findings sequentially within the slice (`F01.1`, `F01.2`, ...) regardless of severity tier.
 
 ## Status at HEAD — How to Determine
 
@@ -131,7 +131,7 @@ This field is what makes the synthesis step possible — only `open` findings ne
 ## Critical Rules
 
 **DO:**
-- Read the actual diff, not just the slice spec's narrative.
+- Read the actual diff, not just the slice's narrative.
 - Trace at least one significant function call chain end-to-end (use the graph) to validate the change makes sense at the system level, not just locally.
 - Verify plan-doc Plan Review issues were addressed if the plan exists.
 - Cite `file:line` in every finding.
@@ -140,8 +140,8 @@ This field is what makes the synthesis step possible — only `open` findings ne
 - Give a clear merge verdict.
 
 **DON'T:**
-- Review the slice spec instead of the code.
-- Repeat the slice spec's "What was implemented" section in your Strengths.
+- Review the slice instead of the code.
+- Repeat the slice's "What was implemented" section in your Strengths.
 - Recommend scope expansion beyond the slice's stated work.
 - Mark style preferences as Critical.
 - Copy the diff into the output — cite, don't paste.
