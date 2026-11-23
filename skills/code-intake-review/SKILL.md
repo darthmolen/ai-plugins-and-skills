@@ -7,7 +7,7 @@ metadata:
 ---
 # Code Review Intake
 
-Poll the code-review queue, pick up slice specs, review the diff with a subagent, append findings in-place, and deposit the spec in `reviewed/`.
+Poll the code-review queue, pick up slices, review the diff with a subagent, append findings in-place, and deposit the slice in `reviewed/`.
 
 **Core principle:** Move before processing. The file system state reflects reality at all times.
 
@@ -15,7 +15,7 @@ Poll the code-review queue, pick up slice specs, review the diff with a subagent
 
 ### Step 1: Check for Work
 
-Slice spec filenames follow either of two conventions:
+Slice filenames follow either of two conventions:
 
 | Form | Pattern | Example |
 |---|---|---|
@@ -30,7 +30,7 @@ ls planning/code-reviews/needs-review/*-code-review-*-slice-*.md \
    | grep -v .gitkeep | sort -u
 ```
 
-The first glob catches the current form; the second catches legacy. `sort -u` collapses any duplicates (legacy files happen to also match the current glob since `<initiative>` between `code-review-` and `-slice-` can be any token).
+The first glob catches the current form; the second catches legacy, which the first does not match (`*-code-review-*-slice-*` needs a token between `code-review-` and `-slice-`). `sort -u` collapses any duplicates.
 
 - **No files:** Do nothing. Return silently. No output at all. (This skill runs on a loop.)
 - **One file:** Proceed to Step 2.
@@ -49,38 +49,52 @@ If files exist in `in-progress/`:
 - Ask: Resume the stale review, or move it back to `needs-review/` and start fresh?
 - Wait for user decision before proceeding.
 
-### Step 3: Validate the Slice Spec
+### Step 3: Validate the Slice
 
 Read the file. Confirm:
-- Frontmatter `type:` field equals `code-review-slice` (REQUIRED — see Step 3a below for mismatch handling).
-- Frontmatter includes `slice`, `base_sha`, `head_sha`, `plan_docs` (possibly empty).
-- Frontmatter `initiative:` field is present for files using the current naming form (`*-code-review-<initiative>-slice-NN-*.md`). Legacy form files (`*-code-review-slice-NN-*.md`) may omit it.
+- Frontmatter `kind:` equals `slice` (REQUIRED). See Step 3a for what to do on a mismatch.
+- Frontmatter includes `status: queued`, `initiative`, `parent_plan`, `slice`, `base_sha`, `head_sha`, and `plan_docs` (possibly empty).
 - `git rev-parse <base_sha>` and `git rev-parse <head_sha>` both succeed.
-- Each `plan_docs` path exists on disk.
-- `parent_plan` (if present) exists on disk.
+- `parent_plan` and each `plan_docs` entry resolves to exactly one document under `planning/`, by the **name rule** below. Zero matches or more than one is an intake error; so is a value written as a path.
 
-If any check fails (other than type mismatch — see 3a), move the file back to `needs-review/` with a note prepended (`## Intake Error — <reason>`) and alert the user. Do not dispatch a subagent on a broken spec.
+**Resolve by the name rule, not by eye.** The rule below is portable and needs no tooling — apply it directly. Where you can run C#, `plan-doc.cs validate --path planning` is the authority (it resolves `parent_plan` / `plan_docs` and exits 1 on any unresolved reference); invoke it as `plan-workflow` → *The scripts* documents, since that skill owns the script and the one correct way to locate it. Do not re-derive the script path here, and do not assume the validator is reachable — it is not in every harness (notably not vanilla Copilot CLI), which is why the rule itself is stated inline:
+
+> A **name** is a document's filename with its kind prefix **and** `.md` removed. Only `feature_`, `bug_` and `stub_` are stripped — a `wave-<n>_` prefix is **not**.
+>
+> | File on disk | Its name (what a slice references) |
+> |---|---|
+> | `feature_pii-ner-processor-service_2026-09-25.md` | `pii-ner-processor-service_2026-09-25` |
+> | `bug_token-expiry_2026-09-25.md` | `token-expiry_2026-09-25` |
+> | `wave-1_read_2026-10-26.md` | `wave-1_read_2026-10-26` (prefix kept) |
+>
+> Match the reference against the **prefix-stripped stem**, never the raw filename. A slice that references `pii-ner-processor-service_2026-09-25` and a file named `feature_pii-ner-processor-service_2026-09-25.md` **are a match** — the missing `feature_` is the name working as designed, not a defect in the slice. A value containing `/`, `\`, or a trailing `.md` is a path, which **is** the error (`PATH-NOT-NAME`); a bare name that resolves is not.
+
+The full contract lives in `plan-writing-syntax` ("References are names, never paths").
+
+If any check fails (other than type mismatch — see 3a), move the file back to `needs-review/` with a note prepended (`## Intake Error — <reason>`) and alert the user. Do not dispatch a subagent on a broken slice.
 
 **Filename ↔ frontmatter consistency.** If the filename is current-form (`*-code-review-<X>-slice-NN-*.md`) but `initiative:` in the frontmatter is missing, OR if the filename's `<X>` segment doesn't match the frontmatter `initiative:` value, that's an intake error. The author got the convention wrong; flag it back to `needs-review/` with a note rather than reviewing under an incorrect grouping.
 
-### Step 3a: Defensive Type Check (Auto-Forward on Mismatch)
+### Step 3a: Defensive Kind Check (Auto-Forward on Mismatch)
 
-If `type:` is missing or set to one of the **plan-stream** types, this file does not belong here. Auto-forward to the correct queue and skip:
+If `kind:` is not `slice`, this file does not belong here. Auto-forward it to the correct queue or flag it, and skip:
 
-| Found type | Action |
+| Found | Action |
 |---|---|
-| `code-review-slice` | OK — proceed to Step 4. |
-| `plan` | Move file to `planning/needs-review/` and alert: "Auto-forwarded plan-typed file from code-review queue to plan queue: `<filename>`." Do not dispatch. |
-| `code-review-plan` | Same — move to `planning/needs-review/`. The plan-* trio handles meta-plans like any other plan. |
-| (missing) | Move file back to `needs-review/` (root) with intake-error note: "Slice spec missing `type: code-review-slice` frontmatter." Alert user. |
-| any other value | Same as missing — move back with intake-error note quoting the unexpected value. |
+| `kind: slice` | OK — proceed to Step 4. |
+| `kind: plan` or `kind: review` | Move the file to `planning/needs-review/` and alert: "Auto-forwarded `<filename>` from the code-review queue to the plan queue." Do not dispatch. A meta-plan (`type: code-review-plan`) goes the same way, because the plan-* trio reviews meta-plans like any other plan. |
+| no `kind:`, `type: code-review-slice` | **Legacy slice.** Leave it in `needs-review/` and prepend an intake-error note: "Legacy slice: add `kind: slice`, `status: queued`, `date:`, `initiative:`, and turn `parent_plan:`/`plan_docs:` into names." Alert the user. |
+| anything else | Leave it in `needs-review/` and prepend an intake-error note quoting the unexpected value. Alert the user. |
 
 The plan-* intake skill performs the symmetric check; together they self-correct user mistakes without losing files.
+
+**Moves use `git mv`** when the file is tracked, and plain `mv` only when it is not yet tracked.
+No document is ever deleted, only moved.
 
 ### Step 4: Move to In-Progress and Update Status
 
 ```bash
-mv planning/code-reviews/needs-review/<file>.md planning/code-reviews/needs-review/in-progress/<file>.md
+git mv planning/code-reviews/needs-review/<file>.md planning/code-reviews/needs-review/in-progress/<file>.md
 ```
 
 Then edit the file's frontmatter to set:
@@ -102,11 +116,11 @@ Fill these placeholders:
 - `{SLICE_TITLE}` — The H1 heading from the slice file
 - `{BASE_SHA}` — from the frontmatter
 - `{HEAD_SHA}` — from the frontmatter
-- `{PLAN_DOCS}` — newline-joined list from frontmatter (or "None")
+- `{PLAN_DOCS}` — the `plan_docs` names, each resolved to its current path under `planning/` by the Step 3 name rule (strip `feature_`/`bug_`/`stub_`; a `wave-<n>_` stays), newline-joined (or "None"). The reviewer reads files, so it gets the paths, and the slice keeps the names.
 
 The subagent reviews the `git diff <base_sha>..<head_sha>` against the focus areas, plan docs, and `CLAUDE.md` conventions. It produces findings with a **Status at HEAD** field per finding.
 
-### Step 6: Append Review to Slice Spec
+### Step 6: Append Review to Slice
 
 Take the subagent's output and append it to the slice file in `in-progress/`:
 
@@ -158,7 +172,7 @@ For every finding the subagent emits:
 On reviewer success:
 
 ```bash
-mv planning/code-reviews/needs-review/in-progress/<file>.md planning/code-reviews/needs-review/reviewed/<file>.md
+git mv planning/code-reviews/needs-review/in-progress/<file>.md planning/code-reviews/needs-review/reviewed/<file>.md
 ```
 
 Update frontmatter:
@@ -194,15 +208,16 @@ If running on a loop, still output a brief one-liner:
 | Situation | Action |
 |-----------|--------|
 | File disappeared from in-progress | Another agent moved it. Log warning, skip. |
-| Subagent fails | Move file back to `needs-review/`. Report error. |
+| Subagent fails | Leave in `in-progress/` with `status: failed` and a `status_note` (Step 7). Report error. |
 | Stale file in in-progress | Ask user before proceeding (Step 2). |
 | SHAs don't rev-parse | Move back to `needs-review/` with intake-error note; alert user. |
-| Plan-doc path missing | Same as SHA failure. |
-| Slice spec has no commits | Move to reviewed with note: "Empty slice — nothing to review." |
+| `parent_plan` / `plan_docs` name unresolved (resolves to zero, or to more than one, under the Step 3 name rule), or written as a path | Same as SHA failure. A name whose only difference from a file is the stripped `feature_`/`bug_`/`stub_` prefix **does** resolve — that is not a failure. |
+| Slice has no commits | Move to reviewed with note: "Empty slice — nothing to review." |
 
 ## Do Not
 
 - Skip the in-progress move.
 - Let a subagent write findings without the Status-at-HEAD field — if it's missing, ask the subagent to re-emit.
-- Modify the slice spec's author-written sections — append only.
-- Dispatch on a broken spec (missing SHAs, missing plan docs).
+- Modify the slice's author-written sections — append only.
+- Dispatch on a broken slice (missing SHAs, missing plan docs).
+- Leave `status:` disagreeing with the directory. The validator checks it.

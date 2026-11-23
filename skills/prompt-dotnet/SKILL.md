@@ -3,12 +3,12 @@ name: prompt-dotnet
 description: >
   Composes and executes a standardized, spec-driven, test-first .NET feature
   prompt. Invoke as /prompt-dotnet followed by the feature description. Chains
-  spec-tier (stakes tiering + review gates), test-filter-development
+  plan-tier (stakes tiering + review gates), test-filter-development
   (RED-GREEN-REFACTOR with captured failure output and a seeded mutant), and
   csharp-quality-developer; if the harness lacks those skills, the inlined
   discipline is the contract. Oriented to ASP.NET Core services/APIs (the
   integration test uses WebApplicationFactory). Use when implementing a .NET
-  feature and you want tiered spec depth, an evidenced test filter, and mandatory
+  feature and you want tiered plan depth, an evidenced test filter, and mandatory
   review.
 metadata:
   category: workflow-composers
@@ -17,7 +17,7 @@ metadata:
 # .NET Feature Prompt (prompt-dotnet)
 
 This skill is a **prompt composer**: it takes `args` (the feature description) and drives a spec-driven,
-test-first .NET workflow by chaining `spec-tier`, `test-filter-development`, and `csharp-quality-developer`.
+test-first .NET workflow by chaining `plan-tier`, `test-filter-development`, and `csharp-quality-developer`.
 
 **How to run it:** substitute the user's `args` into `FEATURE` in the prompt below, then execute the
 prompt. Invoke each of the three skills via the Skill tool as you reach it if your harness has them; if it
@@ -25,12 +25,12 @@ does not, the inlined discipline in the prompt **is** the contract — follow it
 
 ---
 
-You are implementing a .NET feature using a spec-driven, test-first workflow. Apply these skills if your harness has them — `spec-tier`, `test-filter-development`, `csharp-quality-developer`; if not, the inlined discipline below IS the contract, follow it exactly.
+You are implementing a .NET feature using a spec-driven, test-first workflow. Apply these skills if your harness has them — `plan-tier`, `test-filter-development`, `csharp-quality-developer`; if not, the inlined discipline below IS the contract, follow it exactly.
 
 FEATURE:
 > {args}
 
-STEP 1 — Tier the work (spec-tier). Score the stakes across: blast radius; cost-of-being-wrong (reversibility, security, customer/data, public API); verification cost; executor context; novelty/ambiguity. Worst factor dominates. A .NET feature ships code, so it lands at `simple` or `complex` (never the no-code/throw-away exemption). Declare the chosen tier and the review gates at the TOP of the plan file. Gate rules:
+STEP 1 — Tier the work (plan-tier). Score the stakes across: blast radius; cost-of-being-wrong (reversibility, security, customer/data, public API); verification cost; executor context; novelty/ambiguity. Worst factor dominates. A .NET feature ships code, so it lands at `simple` or `complex` (never the no-code/throw-away exemption). Declare the chosen tier and the review gates at the TOP of the plan file. Gate rules:
 - The code-review caboose is MANDATORY on completion regardless of tier (it ships).
 - If `complex`, an adversarial plan review by a DIFFERENT agent/harness is REQUIRED before any code is written.
 

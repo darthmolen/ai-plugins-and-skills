@@ -36,7 +36,7 @@ Extract these as **first-class learning units**, not footnotes. A learner who ca
 
 ## Guardrails
 
-- **Do not fabricate procedures to fill documentation gaps.** Emit a documentation-gap warning. The gap is a bug to file against `documentation/`, and a course that fills it locally lies the moment the real procedure lands.
+- **Do not fabricate procedures to fill documentation gaps.** Emit a documentation-gap warning. The gap is a bug to file against the source repo's docs (`docs/` or `documentation/`), and a course that fills it locally lies the moment the real procedure lands.
 - **Do not convert examples into requirements.** "Here is one way" is not "this is the standard."
 - Do not create a lab whose environment the evidence does not support — put the idea in warnings, not in `lab_candidates`.
 - Do not assign durations or course numbers. Not your stage.

@@ -1,13 +1,21 @@
 ---
 name: code-review-plan-create
-description: Use when ready to plan a code review of a development branch — walks the branch, discovers existing plan documents, maps commits to plans, Q&As unmapped commits with the user, and writes a meta-plan with a slice table at planning/YYYY-MM-DD-code-review-plan-<slug>.md
+description: Use when ready to plan a code review of a development branch — walks the branch, discovers existing plan documents, maps commits to plans, Q&As unmapped commits with the user, and writes a meta-plan with a slice table at planning/code-review-{initiative}_{date}.md, a queued plan on the board
 metadata:
   category: review-helpers
   order: 30
 ---
 # Create a Code-Review Meta-Plan
 
-First punch-in command of the code-review workflow. Produces the **meta-plan** that drives slicing — a single document at `planning/YYYY-MM-DD-code-review-plan-<slug>.md` (frontmatter `type: code-review-plan`) with a slice table that the rest of the workflow operates on.
+First punch-in command of the code-review workflow. It produces the **meta-plan** that drives
+slicing. The meta-plan is a single document at `planning/code-review-<initiative>_<date>.md`, with
+a slice table that the rest of the workflow operates on.
+
+**The meta-plan is an ordinary plan on the board** (`kind: plan`, per `plan-writing-syntax`). It is written
+`queued` to `planning/`. `code-review-plan-execute` moves it to `in-progress/` when the review
+starts, and `code-review-apply` moves it to `completed/` when the last slice is triaged.
+`type: code-review-plan` is a sub-discriminator that tells the code-review skills which plans are
+theirs.
 
 **Core principle:** Git is the source of truth, plans are best-effort context. Commits land in three patterns — clean (matches a plan), revised (matches a post-receive plan version), drifted (matches no plan). This skill maps what it can and Q&As what it can't.
 
@@ -50,11 +58,15 @@ Scan all of:
 ```
 
 For each candidate, extract:
-- frontmatter `type` (filter to `plan` or no type — skip `code-review-*` types here)
-- frontmatter `slug` if present
+- frontmatter `kind` (under `planning/`, keep `plan` and `stub` and skip everything else) and `type` (skip `code-review-plan`)
+- its **name** (filename minus `feature_`/`bug_`/`stub_` and `.md`), the form every reference uses
 - first H1 heading
-- file mtime and creation date
+- file mtime and `date:` field
 - any explicit slug-style file basename
+
+Plans outside the repository (`~/.claude/plans`, Copilot session state) have no name the
+validator can resolve. Use them for mapping, but cite them by path in the slice detail, never in
+a `plan_docs` cell.
 
 ### Step 4: Map Commits → Plans
 
@@ -112,9 +124,9 @@ Proposed slices:
 
 | # | Name | Commits | Plan docs | Focus |
 |---|---|---|---|---|
-| 01 | state-machine-foundation | <base>..<sha> (15 commits) | plan-A.md | dual-write transitions, drop legacy columns |
-| 02 | smart-continue            | <sha>..<sha>  (5 commits) | plan-B.md | leader repair tool wiring |
-| 03 | recovery-recommendation  | <sha>..<sha>  (8 commits) | plan-C.md, plan-D.md | recommendation surface + orphan defense |
+| 01 | state-machine-foundation | <base>..<sha> (15 commits) | plan-a_2026-04-02 | dual-write transitions, drop legacy columns |
+| 02 | smart-continue            | <sha>..<sha>  (5 commits) | plan-b_2026-04-09 | leader repair tool wiring |
+| 03 | recovery-recommendation  | <sha>..<sha>  (8 commits) | plan-c_2026-04-11, plan-d_2026-04-12 | recommendation surface + orphan defense |
 | 04 | demo-seeds-randomization | <sha>..HEAD   (3 commits) | (none — ad-hoc) | seed determinism, GUC pinning |
 ```
 
@@ -127,17 +139,23 @@ Iterate with user until they say "yes, write it." Allow:
 
 ### Step 8: Write the Meta-Plan
 
-Filename: `planning/YYYY-MM-DD-code-review-plan-<slug>.md`. The `<slug>` is typically the branch name kebab-cased (`feature-state-machine` → `feature-state-machine`), or user-provided.
+Filename: `planning/code-review-<initiative>_<YYYY-MM-DD>.md`. Its name, which every slice's
+`parent_plan:` records, is `code-review-<initiative>_<YYYY-MM-DD>`. The `<initiative>` is usually
+the branch name kebab-cased (`feature/state-machine` → `feature-state-machine`), or a slug the user
+provides. It names the slices and the synthesis too, so agree on it before writing.
 
 ```markdown
 ---
+kind: plan
+status: queued
+date: YYYY-MM-DD
 type: code-review-plan
+initiative: <initiative>
 branch: <branch>
 base_sha: <full SHA>
 head_sha: <full SHA>
-slug: <slug>
 slice_count: <N>
-created: YYYY-MM-DD
+author: <who wrote it>
 ---
 
 # Code Review Plan — <branch>
@@ -151,7 +169,7 @@ known plans and their state (clean / revised / drifted), any constraints.>
 
 | # | Name | base_sha | head_sha | Plan docs | Focus areas |
 |---|---|---|---|---|---|
-| 01 | state-machine-foundation | abc1234 | def5678 | planning/<plan-A>.md | • dual-write transitions through IStateTransitionService<br>• drop legacy Phase/Status columns<br>• migration safety |
+| 01 | state-machine-foundation | abc1234 | def5678 | plan-a_2026-04-02 | • dual-write transitions through IStateTransitionService<br>• drop legacy Phase/Status columns<br>• migration safety |
 | 02 | ... | ... | ... | ... | ... |
 
 ## Slice Detail
@@ -164,7 +182,7 @@ known plans and their state (clean / revised / drifted), any constraints.>
 ```
 
 **Plan docs:**
-- [<plan-A.md>](path/to/plan-A.md) — short context on what the plan covered
+- `plan-a_2026-04-02` — short context on what the plan covered
 
 **Focus areas:**
 - Verify all transitions go through IStateTransitionService (no direct entity writes).
@@ -211,8 +229,11 @@ Checked at execute's synthesis checkpoint, after every slice has come back:
 
 ### Step 9: Confirm and Notify
 
+Run `plan-doc.cs validate --path planning`. The meta-plan has to conform before anything
+references it.
+
 Report to chat:
-- Path of the meta-plan
+- Path and name of the meta-plan
 - Slice count
 - Total commits covered
 - Any commits intentionally excluded from slicing
@@ -233,7 +254,9 @@ Report to chat:
 - Map commits to plans the file system can't confirm.
 - Write the meta-plan without user sign-off on the slice table.
 - Force every commit into a slice — out-of-scope is fine if the user says so.
-- Use a slug already in use elsewhere in `planning/` for `code-review-plan` files.
+- Use an initiative already in use by another `type: code-review-plan` plan, or by slices in `planning/code-reviews/`.
+- Write a plan path in a `plan_docs` cell. Write its name.
+- Write the retired `YYYY-MM-DD-code-review-plan-<slug>.md` filename, or a meta-plan without `kind: plan`.
 
 ## Red Flags
 

@@ -1,6 +1,6 @@
 ---
 name: wave-workflow
-description: Use when several plans need to run in parallel across tracks under one lead session — setting up a wave, starting its lead and track sessions (`lead` or `track <name>` as arguments), deciding which files each track owns and what a track does when it needs another's file, running the wave (pause points, contracts that freeze on a named day, the lead pushing verified commits), the integration window, and closing it. Sits above plan-workflow; it schedules plans and never rewrites them.
+description: Use when several plans need to run in parallel across tracks under one lead session — setting up a wave, starting its lead and track sessions (`lead` or `track {name}` as arguments), deciding which files each track owns and what a track does when it needs another's file, running the wave (pause points, contracts that freeze on a named day, the lead pushing verified commits), the integration window, and closing it. Sits above plan-workflow; it schedules plans and never rewrites them.
 metadata:
   category: workflow-composers
 ---
@@ -34,7 +34,21 @@ always knows what changed hands and nothing bypasses a frozen contract.
 | Where | Lead | A track |
 |---|---|---|
 | Terminal | `claude --agent ai-plugins-and-skills:wave-lead --name wave-<n>-lead` | `claude --agent ai-plugins-and-skills:wave-track --name wave-<n>-<track>`, then `track <track>` |
-| Editor tab (VS Code extension) | New tab, `/ai-plugins-and-skills:wave-workflow lead`, then rename the session `wave-<n>-lead` | New tab, `/ai-plugins-and-skills:wave-workflow track <track>`, then rename it `wave-<n>-<track>` |
+| Editor tab (VS Code extension) | New tab, `/ai-plugins-and-skills:wave-workflow lead` | New tab, `/ai-plugins-and-skills:wave-workflow track <track>` |
+
+In an editor tab the session names itself. When the prompt is sent, the plugin's
+`wave-session-title` hook reads the wave number from `planning/WAVE-README.md` and names the session
+`wave-<n>-lead` or `wave-<n>-<track>`, which is the name it is messaged by. The hook needs pwsh 7.
+Without it, rename the session by hand.
+
+**Every session starts and ends through `session-workflow`.** However it was launched, the first
+step after the session has a worktree is `session-start`, and every stop runs `session-end`. A track
+runs `-Subject wave:wave-<n>/<track> -Mode commit`, and the lead runs
+`-Subject wave:wave-<n>/lead -Mode lead`. The session file lets `sessions` show who is running on
+the machine and flag a stale one. Before running a port, local database or container, a session
+locks it under a name taken from its address, such as `port-5000`, so two tracks, or two waves on
+one machine, cannot run it at once. `track.md` and `lead.md` give the commands; `session-workflow`
+gives the lock and stale rules. The `wave-session-title` hook starts no session.
 
 The agents (`wave-lead`, `wave-track`) only point to `lead.md` and `track.md`, so both routes give
 the same instructions. Nothing is written per track: the track name finds the plan
@@ -61,12 +75,42 @@ planning/waves/
     └── wave-<n>_<YYYY-MM-DD>.md     # kind: wave — the wave document
 
 planning/WAVE-README.md                    # generated sign; exists only while a wave is open
+planning/feature_<project>_<YYYY-MM-DD>.md # the project plan, when the work spans waves
 planning/wave-<n>_lead_<YYYY-MM-DD>.md     # the lead's plan, on the board like any plan
 planning/wave-<n>_<track>_<YYYY-MM-DD>.md  # one per track
 ```
 
 The plans live on the board, because their directory is their status; the `wave-<n>_` prefix keeps
 them together there.
+
+**The hierarchy is written as names, in `parent_plan:`.** A lead's plan names the project plan, and
+a track's plan names its wave's lead:
+
+```yaml
+# wave-1_lead_2026-10-26.md
+parent_plan: orders-v1_2026-10-26
+# wave-1_read_2026-10-26.md
+parent_plan: wave-1_lead_2026-10-26
+```
+
+`wave:` says which wave a plan is in, and `parent_plan` says which plan it answers to, so neither
+fact lives in two places. `parent_plan` never names the wave document. `validate` resolves it
+(`UNRESOLVED`, `PATH-NOT-NAME`), and reports a loop as `PARENT-CYCLE`.
+
+### The project plan
+
+When the work spans waves, one plan holds it: `kind: plan`, `track: project`. It moves to
+`in-progress/` when its first wave starts, and to `completed/` when its success criteria are met.
+Its *Waves* table holds **names only**:
+
+| Wave | Delivers | Lead plan | State |
+| --- | --- | --- | --- |
+| 1 | The read path | `wave-1_lead_2026-10-26` | Planned |
+| 2 | `parts-reservation` | — | Conditional: `orders-write-path_2026-10-26` |
+
+Nothing in it says where a document sits. The sign and the generated wave table give current
+locations. So the project plan changes only when its status does, or when a wave closes and its
+row records what was decided.
 
 **`WAVE-README.md` is the sign that a wave is running.** `plan-doc.cs wave-table --fix` writes it at
 the board's root while a wave document that carries the wave-table markers is `status: open`, and
@@ -124,9 +168,10 @@ A wave that edits those has become a very large plan.
 1. Write the wave document from the template, a plan for the lead (`wave-<n>_lead_<date>`), and a
    plan per track. Name each plan `wave-<n>_<track>[-<name>]_<YYYY-MM-DD>.md` (`plan-workflow`), so
    the wave's plans sort together on the board and every reference to one says which wave it is in.
-   Give each one `wave: wave-<n>`, `tier:`, `author:` and, where the code lives elsewhere, `repo:`
-   in its frontmatter (`plan-writing-syntax`). Leave the order and start day to the wave document's
-   Tracks and plans table: scheduling belongs to the wave. Put anything one track needs and the
+   Give each one `wave: wave-<n>`, `parent_plan:` (the project plan for the lead, the lead's plan for
+   a track), `tier:`, `author:` and, where the code lives elsewhere, `repo:` in its frontmatter
+   (`plan-writing-syntax`). If the work spans waves and there is no project plan yet, write it
+   first. Leave the order and start day to the wave document's Tracks and plans table: scheduling belongs to the wave. Put anything one track needs and the
    others don't, such as an extra skill, in that track's plan. Then run
    `plan-doc.cs wave-table --fix`.
 2. **Promote every backlog stub a plan absorbs:**
@@ -135,12 +180,17 @@ A wave that edits those has become a very large plan.
    table.
 3. **File a stub for every item the wave defers,** and name it in Out of scope.
 4. Answer the plans' open questions in the wave document.
-5. Send each High-tier plan (`spec-tier`) through `plan-send-review`, and record the outcome with
+5. Send each High-tier plan (`plan-tier`) through `plan-send-review`, and record the outcome with
    `plan-record-review`.
 
 Refer to plans by name (`wave-1_store_2026-10-21`), never by path. A plan moves from the queue to
 `in-progress/` to `completed/`, and a hand-written path goes stale on the first move. The generated
-wave table is the one place a plan's current path appears, because it is regenerated.
+wave table and the sign are the only places a plan's current path appears, because they are
+regenerated. `validate` enforces this. It reports `BODY-PATH` for a markdown link to another
+planning document in the body of any open plan, stub, wave document, context or reminder.
+Completed documents keep their links as history. Links **into** `planning/waves/` are allowed,
+because the wave document and the waves context never move. So a plan may link
+`waves/wave-1/wave-1_<date>.md#integration-gate`, but the wave document names its plans.
 
 ## Admitting a plan to a track
 
@@ -189,12 +239,14 @@ the change. The typical case is a test that pins a stand-in the other track's re
 
 ### The lead
 
-- Writes no production code.
+- Writes no production code, force-pushes or merges (`session-workflow`'s `lead` mode).
+- Keeps each verification worktree while a person uses it, up to its pull request's merge, and
+  lists the ones it holds in the wave document (`lead.md`, *Verification worktrees*).
 - Keeps `waves-context.md` current, and tells the tracks to re-read it when it changes.
 - Answers contract questions. A change to a frozen contract goes through the lead only.
 - Receives a SHA from each track and verifies it from a clean checkout: a fresh worktree, no `bin/`
   or `obj/`, warnings as errors, every test project. Then pushes the branch and opens the pull
-  request with the host's tooling (`gh pr create`, or your platform's equivalent).
+  request (`ado-pr` on Azure DevOps, `gh pr create` on GitHub).
 - Before pushing a follow-up to an open pull request, confirms it is still active. A merged branch is
   spent: squash merges leave nothing to add to, so follow-up work goes on a new branch.
 - Reports pull requests with full links, one per line, in the order to complete them.
@@ -206,7 +258,8 @@ the change. The typical case is a test that pins a stand-in the other track's re
   its own failure.
 - Edits only the files its plan lists. If it needs another track's file, it stops and asks the lead.
 - Stops at its pause point, reports, and waits for the lead.
-- Never pushes and never merges. It sends the lead a SHA once it has verified from a clean checkout.
+- Never pushes and never merges (`session-workflow`'s `commit` mode). It sends the lead a SHA once
+  it has verified from a clean checkout.
 - Closes its plan through `plan-workflow` (Status section, `completed/` or `blocked/`).
 
 ## Contracts and freezes
@@ -241,7 +294,8 @@ created per project and never shared.
 3. **Reconcile the spec and the project plan** with what shipped. Set each delivered feature to
    `Shipped` or `Shipped interim`, delete interim blocks whose target shipped, and run
    `spec-table --fix` (`system-spec`). Update the project plan's row for the wave.
-4. Check that the waves context cites plans by name. Fix any path that went stale.
+4. Run `plan-doc.cs validate`. Any `BODY-PATH` finding is a hand-written link to replace with the
+   document's name.
 5. Set the wave document's `status: done`, then run `plan-doc.cs wave-table --fix`. That fixes the
    plan table as it closed and takes down `planning/WAVE-README.md`.
 6. In `waves-context.md`, mark every track done, add the rules learned, and set the current wave to

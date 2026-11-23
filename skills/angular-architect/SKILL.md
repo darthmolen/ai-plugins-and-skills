@@ -8,7 +8,7 @@ metadata:
 
 # Angular Architect Skill
 
-Strategic, checklist-driven guidance for Angular 20+ enterprise applications: architecture, state, performance, micro-frontends, testing, Nx, and signals. Pairs with `angular-expert` (which carries code-level patterns) — this skill informs higher-level decisions.
+Strategic, checklist-driven guidance for Angular 20+ enterprise applications: architecture, state, performance, micro-frontends, testing, Nx, and signals. Pairs with `angular-developer` (which carries code-level patterns) — this skill informs higher-level decisions.
 
 ---
 

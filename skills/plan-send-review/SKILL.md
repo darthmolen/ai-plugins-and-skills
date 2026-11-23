@@ -19,7 +19,7 @@ YYYY-MM-DD-<slug>.md
 - `YYYY-MM-DD` is the date the plan is queued (today, when this skill runs).
 - `<slug>` is a kebab-case slug derived from the plan's first H1 heading.
 
-This is enforced regardless of agent (Claude Code, Copilot CLI, etc.). Any agent picking up plan files from the queue should expect this format. It mirrors the convention `code-send-review` applies to slice specs, so both queues read the same way.
+This is enforced regardless of agent (Claude Code, Copilot CLI, etc.). Any agent picking up plan files from the queue should expect this format. It mirrors the convention `code-send-review` applies to slices, so both queues read the same way.
 
 ## Frontmatter Convention
 
@@ -30,7 +30,9 @@ type: plan                 # standard plan (default)
 type: code-review-plan     # meta-plan describing how to slice a branch for review
 ```
 
-Both flow through `plan-intake-review` and `plan-receive-review` identically. The discriminator matters at the boundary: `plan-intake-review` auto-forwards `type: code-review-slice` files to the code-review queue, because they do not belong here.
+Both flow through `plan-intake-review` and `plan-receive-review` identically. A code-review slice
+(`kind: slice`) never belongs here, and `plan-intake-review` auto-forwards one to the code-review
+queue.
 
 A reminder never enters this queue at all. It carries `kind: reminder` — a corpus field owned by `plan-writing-syntax`, not a `type:` value — and reminders are not reviewed. See `reminders-set`.
 

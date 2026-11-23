@@ -649,7 +649,7 @@ record PlanDoc(string Path, string Rel, Dictionary<string, string> Fields, strin
 
 static class Contract
 {
-    public static readonly string[] Kinds = ["plan", "stub", "reminder", "review", "wave", "context"];
+    public static readonly string[] Kinds = ["plan", "stub", "reminder", "review", "wave", "context", "slice", "synthesis"];
 
     // A stub is a baby plan, so the two share one vocabulary (plan-writing-syntax). Folders are
     // status buckets: `backlog` means *deferred, nobody has committed to this yet*,
@@ -667,6 +667,11 @@ static class Contract
         ["review"] = ["open", "done"],
         ["wave"] = ["open", "done"],
         ["context"] = ["open", "done"],
+
+        // The code-review pipeline (plan-writing-syntax). A slice has more states than a review
+        // because a reviewer can fail and a developer triages in place.
+        ["slice"] = ["queued", "reviewing", "failed", "reviewed", "triaging", "completed"],
+        ["synthesis"] = ["open", "done"],
     };
 
     // The board's statuses, keyed by status ALONE -- a plan and a stub of the same
@@ -705,6 +710,21 @@ static class Contract
         // sits at the top of waves/ only.
         ["context/open"] = ["waves"],
         ["context/done"] = ["waves"],
+
+        // code-intake-review and code-review-plan-execute claim a slice into in-progress/
+        // and leave it there if the reviewer fails; code-review-apply triages it in
+        // reviewed/ and files it in completed/.
+        ["slice/queued"] = ["code-reviews/needs-review"],
+        ["slice/reviewing"] = ["code-reviews/needs-review/in-progress"],
+        ["slice/failed"] = ["code-reviews/needs-review/in-progress"],
+        ["slice/reviewed"] = ["code-reviews/needs-review/reviewed"],
+        ["slice/triaging"] = ["code-reviews/needs-review/reviewed"],
+        ["slice/completed"] = ["code-reviews/needs-review/completed"],
+
+        // A synthesis is read at the top of code-reviews/ while it is current, and
+        // retires beside the slices it summarised.
+        ["synthesis/open"] = ["code-reviews"],
+        ["synthesis/done"] = ["code-reviews/needs-review/completed"],
     };
 
     public static bool OnTheBoard(string kind) =>
@@ -728,7 +748,7 @@ static class Contract
 
     public static bool IsWaveName(string value) => Regex.IsMatch(value, @"^wave-\d+$");
 
-    // spec-tier's three tiers, lower-case like every other frontmatter vocabulary.
+    // plan-tier's three tiers, lower-case like every other frontmatter vocabulary.
     public static readonly string[] Tiers = ["low", "medium", "high"];
 
     // Optional, but a present field with no value says nothing.
@@ -746,6 +766,19 @@ static class Contract
     // a stub is required to carry no more and no less than a plan of the same status.
     // `promoted_to:` is deliberately NOT here -- promotion IS a stub's completion, and
     // which terminal bucket a stub lands in is judgement, not something to police.
+    // Fields a kind carries from birth, whatever its status. Not RequiredFields: that is
+    // the gate close shares, and close never sets these -- the skill that writes the
+    // document does. A code-review document is meaningless without the initiative it
+    // belongs to and the meta-plan that spawned it.
+    static readonly Dictionary<string, string[]> IdentityFieldsByKind = new(StringComparer.Ordinal)
+    {
+        ["slice"] = ["initiative", "parent_plan"],
+        ["synthesis"] = ["initiative", "parent_plan"],
+    };
+
+    public static string[] IdentityFields(string kind) =>
+        IdentityFieldsByKind.TryGetValue(kind, out string[]? f) ? f : [];
+
     public static string[] RequiredFields(string kind, string status)
     {
         if (!OnTheBoard(kind))
@@ -771,7 +804,34 @@ static class Contract
         ["folded_into"] = ["plan"],
         ["plan"] = ["plan", "stub"],
         ["reviews"] = ["plan", "stub"],
+        ["parent_plan"] = ["plan"],
     };
+
+    // Reference fields holding a list of names, each resolved on its own.
+    public static readonly Dictionary<string, string[]> ListReferenceFields = new(StringComparer.Ordinal)
+    {
+        ["plan_docs"] = ["plan", "stub"],
+    };
+
+    // Where the referring kind narrows a field's targets: a synthesis is superseded by
+    // the next synthesis, never by a plan.
+    static readonly Dictionary<string, string[]> ReferenceOverrides = new(StringComparer.Ordinal)
+    {
+        ["synthesis/superseded_by"] = ["synthesis"],
+    };
+
+    // BODY-PATH applies to documents that can still change. A completed or abandoned
+    // document is a historical record and keeps its links, as history keeps the old names of
+    // renamed skills; rewriting them would falsify what it recorded.
+    public static bool BodyPathInScope(string kind, string status) => kind switch
+    {
+        "plan" or "stub" => status is "backlog" or "queued" or "in-progress" or "blocked",
+        "wave" or "context" or "reminder" => status == "open",
+        _ => false,
+    };
+
+    public static string[] ReferenceTargets(string kind, string field, string[] targets) =>
+        ReferenceOverrides.TryGetValue($"{kind}/{field}", out string[]? o) ? o : targets;
 
     // Optional, and shape-checked rather than required. They record the one fact
     // status cannot: who made the call, and when. There is no `decision:` enum --
@@ -1019,12 +1079,54 @@ static class WaveSign
             sb.Append($"- **Messages go through the lead.** Tracks message `{w}-lead`, never each other.\n\n");
             sb.Append("| Start | In a VS Code extension tab | In a terminal |\n");
             sb.Append("| --- | --- | --- |\n");
-            sb.Append($"| The lead | `/ai-plugins-and-skills:wave-workflow lead`, then rename the session `{w}-lead` | `claude --agent ai-plugins-and-skills:wave-lead --name {w}-lead` |\n");
-            sb.Append($"| A track | `/ai-plugins-and-skills:wave-workflow track <track>`, then rename it `{w}-<track>` | `claude --agent ai-plugins-and-skills:wave-track --name {w}-<track>`, then `track <track>` |\n\n");
+            sb.Append($"| The lead | `/ai-plugins-and-skills:wave-workflow lead` (the session names itself `{w}-lead`) | `claude --agent ai-plugins-and-skills:wave-lead --name {w}-lead` |\n");
+            sb.Append($"| A track | `/ai-plugins-and-skills:wave-workflow track <track>` (it names itself `{w}-<track>`) | `claude --agent ai-plugins-and-skills:wave-track --name {w}-<track>`, then `track <track>` |\n\n");
             sb.Append(WaveTable.Render(wave, docs, linkPrefix: string.Empty)).Append('\n');
+            sb.Append(LaunchBlock(wave, docs)).Append('\n');
         }
 
         return sb.ToString();
+    }
+
+    // Busiest first: a track with several plans starts as its busiest plan does.
+    private static readonly string[] Busiest = ["in-progress", "queued", "blocked", "backlog", "completed", "not-implemented"];
+
+    // One hidden line a tool reads: the lead first, then each track by name.
+    public static string LaunchBlock(PlanDoc wave, IReadOnlyList<PlanDoc> docs)
+    {
+        string w = Contract.WaveOf(wave.FileName)!;
+        var sessions = docs
+            .Where(p => p.Wave == w && p.Fields.GetValueOrDefault("track", string.Empty).Length > 0)
+            .GroupBy(p => p.Fields["track"], StringComparer.Ordinal)
+            .Select(g => (Track: g.Key, Status: g.Select(p => p.Status ?? string.Empty).OrderBy(s => Array.IndexOf(Busiest, s) is var i && i < 0 ? int.MaxValue : i).First()))
+            .OrderBy(s => s.Track == "lead" ? 0 : 1)
+            .ThenBy(s => s.Track, StringComparer.Ordinal);
+
+        // Utf8JsonWriter, not JsonSerializer: file-based apps run with reflection-based
+        // serialization switched off.
+        using var buffer = new MemoryStream();
+        using (var json = new System.Text.Json.Utf8JsonWriter(buffer))
+        {
+            json.WriteStartObject();
+            json.WriteNumber("wave", int.Parse(w["wave-".Length..], System.Globalization.CultureInfo.InvariantCulture));
+            json.WriteStartArray("sessions");
+            foreach (var s in sessions)
+            {
+                bool lead = s.Track == "lead";
+                json.WriteStartObject();
+                json.WriteString("name", $"{w}-{s.Track}");
+                json.WriteString("role", lead ? "lead" : "track");
+                json.WriteString("track", s.Track);
+                json.WriteString("prompt", lead ? "/ai-plugins-and-skills:wave-workflow lead" : $"/ai-plugins-and-skills:wave-workflow track {s.Track}");
+                json.WriteString("status", s.Status);
+                json.WriteEndObject();
+            }
+
+            json.WriteEndArray();
+            json.WriteEndObject();
+        }
+
+        return $"<!-- wave-launch {Encoding.UTF8.GetString(buffer.ToArray())} -->";
     }
 
     public static Finding? Check(string? current, IReadOnlyList<PlanDoc> docs)
@@ -1494,7 +1596,7 @@ static class Validator
 
             if (d.Fields.TryGetValue("tier", out string? tier) && !Contract.Tiers.Contains(tier, StringComparer.Ordinal))
             {
-                findings.Add(new Finding(d.Rel, "BAD-TIER", $"tier: '{tier}' is not one of {string.Join(", ", Contract.Tiers)} (spec-tier)"));
+                findings.Add(new Finding(d.Rel, "BAD-TIER", $"tier: '{tier}' is not one of {string.Join(", ", Contract.Tiers)} (plan-tier)"));
             }
 
             foreach (string field in Contract.NonEmptyFields.Where(f => d.Fields.TryGetValue(f, out string? v) && v.Length == 0))
@@ -1519,6 +1621,11 @@ static class Validator
                         "MISSING-FIELD",
                         $"status '{d.Status}' requires {string.Join(" or ", alternatives.Select(a => a + ":"))}"));
                 }
+            }
+
+            foreach (string field in Contract.IdentityFields(d.Kind).Where(f => !d.Fields.TryGetValue(f, out string? v) || v.Length == 0))
+            {
+                findings.Add(new Finding(d.Rel, "MISSING-FIELD", $"kind '{d.Kind}' requires {field}:"));
             }
 
             // A stub that turned out to be a bad idea ends the same way a plan does,
@@ -1564,32 +1671,49 @@ static class Validator
             // got wrong: a stored path is wrong the moment its target moves.
             foreach ((string field, string[] kinds) in Contract.ReferenceFields)
             {
-                if (!d.Fields.TryGetValue(field, out string? target) || target.Length == 0)
+                if (d.Fields.TryGetValue(field, out string? target) && target.Length > 0)
                 {
-                    continue;
+                    CheckReference(d, docs, field, target, Contract.ReferenceTargets(d.Kind, field, kinds), findings);
                 }
+            }
 
-                if (Names.LooksLikePath(target))
+            foreach ((string field, string[] kinds) in Contract.ListReferenceFields)
+            {
+                if (d.Fields.TryGetValue(field, out string? list))
                 {
-                    findings.Add(new Finding(d.Rel, "PATH-NOT-NAME", $"{field}: '{target}' is a path; use the name (filename minus status prefix and .md)"));
-                    continue;
+                    foreach (string target in Fm.Items(list))
+                    {
+                        CheckReference(d, docs, field, target, kinds, findings);
+                    }
                 }
+            }
+        }
 
-                if (target == d.Name)
-                {
-                    findings.Add(new Finding(d.Rel, "SELF-REFERENCE", $"{field}: names this document"));
-                    continue;
-                }
+        // parent_plan builds a hierarchy by name; a loop of names makes it meaningless.
+        // A direct self-reference is already SELF-REFERENCE, so start one step up.
+        var byName = docs.Where(o => o.Kind == "plan").GroupBy(o => o.Name).Where(g => g.Count() == 1)
+                         .ToDictionary(g => g.Key, g => g.Single(), StringComparer.Ordinal);
+        foreach (PlanDoc d in docs.Where(o => o.Fields.ContainsKey("parent_plan")))
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            string? next = d.Fields["parent_plan"];
+            while (next is not null && next != d.Name && seen.Add(next) && byName.TryGetValue(next, out PlanDoc? up))
+            {
+                next = up.Fields.GetValueOrDefault("parent_plan");
+            }
 
-                PlanDoc[] matches = [.. docs.Where(o => o.Name == target && kinds.Contains(o.Kind))];
-                if (matches.Length == 0)
-                {
-                    findings.Add(new Finding(d.Rel, "UNRESOLVED", $"{field}: '{target}' matches no {string.Join(" or ", kinds)}"));
-                }
-                else if (matches.Length > 1)
-                {
-                    findings.Add(new Finding(d.Rel, "AMBIGUOUS", $"{field}: '{target}' matches {matches.Length}: {string.Join(", ", matches.Select(m => m.Rel))}"));
-                }
+            if (next == d.Name && d.Fields["parent_plan"] != d.Name)
+            {
+                findings.Add(new Finding(d.Rel, "PARENT-CYCLE", $"following parent_plan from '{d.Name}' leads back to it"));
+            }
+        }
+
+        // Open documents name other documents; only generated output carries their paths.
+        foreach (PlanDoc d in docs.Where(o => o.HasFrontmatter && Contract.BodyPathInScope(o.Kind, o.Status)))
+        {
+            foreach (string target in BodyPaths(d))
+            {
+                findings.Add(new Finding(d.Rel, "BODY-PATH", $"links by path to {target}; write the name ({Names.FromFileName(target.Split('/').Last())}) and let the tooling find it"));
             }
         }
 
@@ -1624,6 +1748,92 @@ static class Validator
         }
 
         return findings;
+    }
+
+    // Markdown links in the body that resolve, relative to the document, to a planning
+    // document under planning/. Existence is not required: a link to where a plan USED to
+    // be is the commonest case. Generated wave-table blocks, links outside planning/,
+    // links into waves/, external links and exempt files (README, the sign, evidence/)
+    // are not reported.
+    public static IReadOnlyList<string> BodyPaths(PlanDoc d)
+    {
+        string body = Regex.Replace(
+            d.Body,
+            $"{Regex.Escape(WaveTable.Begin)}.*?{Regex.Escape(WaveTable.End)}",
+            string.Empty,
+            RegexOptions.Singleline);
+
+        var found = new List<string>();
+        foreach (Match m in Regex.Matches(body, @"\]\(\s*<?([^)\s>]+)>?(?:\s+""[^""]*"")?\s*\)"))
+        {
+            string target = m.Groups[1].Value.Split('#')[0];
+            if (target.Length == 0 || target.Contains("://", StringComparison.Ordinal)
+                || target.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
+                || !target.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var parts = new List<string>(d.Dir == "planning" ? [] : d.Dir.Split('/'));
+            bool escaped = false;
+            foreach (string seg in target.Replace('\\', '/').Split('/'))
+            {
+                if (seg is "" or ".")
+                {
+                    continue;
+                }
+
+                if (seg == "..")
+                {
+                    if (parts.Count == 0)
+                    {
+                        escaped = true;
+                        break;
+                    }
+
+                    parts.RemoveAt(parts.Count - 1);
+                }
+                else
+                {
+                    parts.Add(seg);
+                }
+            }
+
+            // waves/ holds wave documents and the context, open or done: they never move,
+            // so a link into them cannot go stale, and its #section anchor is worth keeping.
+            string rel = string.Join('/', parts);
+            if (!escaped && !Contract.IsExempt(rel) && !rel.StartsWith("waves/", StringComparison.Ordinal))
+            {
+                found.Add(rel);
+            }
+        }
+
+        return found;
+    }
+
+    static void CheckReference(PlanDoc d, IReadOnlyList<PlanDoc> docs, string field, string target, string[] kinds, List<Finding> findings)
+    {
+        if (Names.LooksLikePath(target))
+        {
+            findings.Add(new Finding(d.Rel, "PATH-NOT-NAME", $"{field}: '{target}' is a path; use the name (filename minus status prefix and .md)"));
+            return;
+        }
+
+        if (target == d.Name)
+        {
+            findings.Add(new Finding(d.Rel, "SELF-REFERENCE", $"{field}: names this document"));
+            return;
+        }
+
+        PlanDoc[] matches = [.. docs.Where(o => o.Name == target && kinds.Contains(o.Kind))];
+        if (matches.Length == 0)
+        {
+            findings.Add(new Finding(d.Rel, "UNRESOLVED", $"{field}: '{target}' matches no {string.Join(" or ", kinds)}"));
+        }
+        else if (matches.Length > 1)
+        {
+            findings.Add(new Finding(d.Rel, "AMBIGUOUS", $"{field}: '{target}' matches {matches.Length}: {string.Join(", ", matches.Select(m => m.Rel))}"));
+        }
     }
 
     public static IReadOnlyList<string> FileSet(string body)
@@ -1780,6 +1990,143 @@ static class SelfTest
         Eq("stub_ marks a stub", Contract.PrefixFor("stub"), "stub_");
         Eq("a reminder has no kind prefix", Contract.PrefixFor("reminder"), "");
 
+        // --- the code-review pipeline: slice and synthesis -----------------
+        // A slice walks code-reviews/needs-review/ -> in-progress/ -> reviewed/ ->
+        // completed/. The meta-plan that spawned it is an ordinary plan on the board, so
+        // parent_plan: is a name and survives the plan's moves.
+        const string MetaPlan = "kind: plan\nstatus: in-progress\ntrack: code-review-x\ndate: 2026-11-04\ntype: code-review-plan\ninitiative: x";
+        PlanDoc meta = Doc("in-progress/code-review-x_2026-11-04.md", MetaPlan);
+        const string SliceFile = "2026-11-04-code-review-x-slice-01-a.md";
+        static string Slice(string status, string extra = "") =>
+            $"kind: slice\nstatus: {status}\ndate: 2026-11-04\ninitiative: x\nparent_plan: code-review-x_2026-11-04{extra}";
+
+        (string Status, string Folder)[] sliceHomes =
+        [
+            ("queued", "code-reviews/needs-review"),
+            ("reviewing", "code-reviews/needs-review/in-progress"),
+            ("failed", "code-reviews/needs-review/in-progress"),
+            ("reviewed", "code-reviews/needs-review/reviewed"),
+            ("triaging", "code-reviews/needs-review/reviewed"),
+            ("completed", "code-reviews/needs-review/completed"),
+        ];
+        foreach ((string status, string folder) in sliceHomes)
+        {
+            True_($"a {status} slice in {folder}/ conforms",
+                Rules(Doc($"{folder}/{SliceFile}", Slice(status)), meta).Length == 0);
+        }
+
+        True_("a reviewed slice still in needs-review/ is DIR-MISMATCH",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", Slice("reviewed")), meta).Contains("DIR-MISMATCH"));
+        True_("a slice cannot borrow a review's status",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", Slice("open")), meta).Contains("BAD-STATUS"));
+        True_("a slice without initiative: is MISSING-FIELD",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", "kind: slice\nstatus: queued\ndate: 2026-11-04\nparent_plan: code-review-x_2026-11-04"), meta).Contains("MISSING-FIELD"));
+        True_("a slice without parent_plan: is MISSING-FIELD",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", "kind: slice\nstatus: queued\ndate: 2026-11-04\ninitiative: x"), meta).Contains("MISSING-FIELD"));
+        True_("parent_plan: given a path is PATH-NOT-NAME",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", "kind: slice\nstatus: queued\ndate: 2026-11-04\ninitiative: x\nparent_plan: planning/in-progress/code-review-x_2026-11-04.md"), meta).Contains("PATH-NOT-NAME"));
+        True_("parent_plan: must name a plan, not a stub",
+            Rules(
+                Doc($"code-reviews/needs-review/{SliceFile}", Slice("queued")),
+                Doc("backlog/stub_code-review-x_2026-11-04.md", "kind: stub\nstatus: backlog\ndate: 2026-11-04")).Contains("UNRESOLVED"));
+
+        // plan_docs: is a list of names, each resolved like any other reference.
+        PlanDoc implemented = Doc("completed/feature_a-plan_2026-10-21.md", "kind: plan\nstatus: completed\ndate: 2026-10-21\ncompleted: 2026-10-22");
+        True_("plan_docs: naming a real plan conforms",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", Slice("queued", "\nplan_docs: [a-plan_2026-10-21]")), meta, implemented).Length == 0);
+        True_("plan_docs: as a block list conforms",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", Slice("queued", "\nplan_docs:\n  - a-plan_2026-10-21")), meta, implemented).Length == 0);
+        True_("plan_docs: naming no plan is UNRESOLVED",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", Slice("queued", "\nplan_docs: [a-plan_2026-10-21, no-such_2026-10-21]")), meta, implemented).Contains("UNRESOLVED"));
+        True_("plan_docs: given a path is PATH-NOT-NAME",
+            Rules(Doc($"code-reviews/needs-review/{SliceFile}", Slice("queued", "\nplan_docs: [planning/completed/feature_a-plan_2026-10-21.md]")), meta, implemented).Contains("PATH-NOT-NAME"));
+
+        // A synthesis is append-only: each run is a new file, the one it replaces is
+        // done and names its successor, and the last retires with the slices.
+        const string SynthFile = "2026-11-04-code-review-x-synthesis-01.md";
+        static string Synth(string status, string extra = "") =>
+            $"kind: synthesis\nstatus: {status}\ndate: 2026-11-04\ninitiative: x\nparent_plan: code-review-x_2026-11-04{extra}";
+        True_("an open synthesis in code-reviews/ conforms",
+            Rules(Doc($"code-reviews/{SynthFile}", Synth("open")), meta).Length == 0);
+        True_("a done synthesis retires with the slices",
+            Rules(Doc($"code-reviews/needs-review/completed/{SynthFile}", Synth("done")), meta).Length == 0);
+        True_("an open synthesis in completed/ is DIR-MISMATCH",
+            Rules(Doc($"code-reviews/needs-review/completed/{SynthFile}", Synth("open")), meta).Contains("DIR-MISMATCH"));
+        True_("a synthesis without parent_plan: is MISSING-FIELD",
+            Rules(Doc($"code-reviews/{SynthFile}", "kind: synthesis\nstatus: open\ndate: 2026-11-04\ninitiative: x"), meta).Contains("MISSING-FIELD"));
+        True_("a superseded synthesis names its successor",
+            Rules(
+                Doc($"code-reviews/needs-review/completed/{SynthFile}", Synth("done", "\nsuperseded_by: 2026-11-05-code-review-x-synthesis-02")),
+                Doc("code-reviews/2026-11-05-code-review-x-synthesis-02.md", Synth("open")),
+                meta).Length == 0);
+        True_("a synthesis cannot be superseded by a plan",
+            Rules(
+                Doc($"code-reviews/needs-review/completed/{SynthFile}", Synth("done", "\nsuperseded_by: code-review-x_2026-11-04")),
+                meta).Contains("UNRESOLVED"));
+        True_("a plan cannot be superseded by a synthesis",
+            Rules(
+                Doc("not-implemented/feature_p_2026-11-04.md", "kind: plan\nstatus: not-implemented\ndate: 2026-11-04\nreason: superseded\nsuperseded_by: 2026-11-04-code-review-x-synthesis-01"),
+                Doc($"code-reviews/{SynthFile}", Synth("open")),
+                meta).Contains("UNRESOLVED"));
+
+        // --- plan hierarchy by name: parent_plan on plans, PARENT-CYCLE ------------------
+        // A lead names its project plan and a track names its lead. A name survives every
+        // move, but a loop of names would make the hierarchy meaningless.
+        const string Project = "kind: plan\nstatus: queued\ntrack: project\ndate: 2026-10-26";
+        PlanDoc project = Doc("feature_orders-v1_2026-10-26.md", Project);
+        PlanDoc lead = Doc("wave-1_lead_2026-10-26.md", QueuedPlanIn("lead") + "\nparent_plan: orders-v1_2026-10-26");
+        PlanDoc track = Doc("wave-1_read_2026-10-26.md", QueuedPlanIn("read") + "\nparent_plan: wave-1_lead_2026-10-26");
+        PlanDoc wave1 = Doc("waves/wave-1/wave-1_2026-10-26.md", "kind: wave\nstatus: open\ndate: 2026-10-26");
+        static string QueuedPlanIn(string t) => $"kind: plan\nstatus: queued\ntrack: {t}\ndate: 2026-10-26\nwave: wave-1";
+        True_("a track -> lead -> project chain conforms",
+            Rules(project, lead, track, wave1).Length == 0);
+        True_("two plans naming each other as parent is PARENT-CYCLE",
+            Rules(
+                Doc("feature_a_2026-10-26.md", "kind: plan\nstatus: queued\ndate: 2026-10-26\nparent_plan: b_2026-10-26"),
+                Doc("feature_b_2026-10-26.md", "kind: plan\nstatus: queued\ndate: 2026-10-26\nparent_plan: a_2026-10-26")).Contains("PARENT-CYCLE"));
+        True_("a three-plan loop is PARENT-CYCLE",
+            Rules(
+                Doc("feature_a_2026-10-26.md", "kind: plan\nstatus: queued\ndate: 2026-10-26\nparent_plan: b_2026-10-26"),
+                Doc("feature_b_2026-10-26.md", "kind: plan\nstatus: queued\ndate: 2026-10-26\nparent_plan: c_2026-10-26"),
+                Doc("feature_c_2026-10-26.md", "kind: plan\nstatus: queued\ndate: 2026-10-26\nparent_plan: a_2026-10-26")).Contains("PARENT-CYCLE"));
+
+        // --- BODY-PATH: open documents name other documents; only tooling writes paths ----
+        // A hand-written link to another planning document goes stale on the target's
+        // first move, and fixing it edits a document whose own status did not change.
+        True_("an open plan linking a plan by path is BODY-PATH",
+            Rules(Doc("feature_orders-v1_2026-10-26.md", Project, "Start at [lead](wave-1_lead_2026-10-26.md).\n"), lead, wave1).Contains("BODY-PATH"));
+        True_("a stale link, to where the plan used to be, is still BODY-PATH",
+            Rules(Doc("feature_orders-v1_2026-10-26.md", Project, "See [x](in-progress/feature_gone_2026-10-26.md).\n")).Contains("BODY-PATH"));
+        True_("a wave document's ../../ link to a plan is BODY-PATH",
+            Rules(Doc("waves/wave-1/wave-1_2026-10-26.md", "kind: wave\nstatus: open\ndate: 2026-10-26", "Lead: [l](../../wave-1_lead_2026-10-26.md)\n"), lead, project).Contains("BODY-PATH"));
+        True_("an open stub linking a plan by path is BODY-PATH",
+            Rules(Doc("backlog/stub_x_2026-10-26.md", "kind: stub\nstatus: backlog\ndate: 2026-10-26", "Found in [p](../feature_orders-v1_2026-10-26.md).\n"), project).Contains("BODY-PATH"));
+        True_("a completed plan keeps its historical links",
+            !Rules(Doc("completed/feature_old_2026-10-26.md", "kind: plan\nstatus: completed\ndate: 2026-10-26\ncompleted: 2026-10-27", "See [l](../wave-1_lead_2026-10-26.md).\n"), lead, wave1).Contains("BODY-PATH"));
+        True_("a link outside planning/, such as a spec, is not BODY-PATH",
+            !Rules(Doc("feature_orders-v1_2026-10-26.md", Project, "The [spec](../docs/specs/orders-spec.md).\n")).Contains("BODY-PATH"));
+        True_("an external link is not BODY-PATH",
+            !Rules(Doc("feature_orders-v1_2026-10-26.md", Project, "See [docs](https://example.com/x.md).\n")).Contains("BODY-PATH"));
+        True_("a link to signage (README.md) is not BODY-PATH",
+            !Rules(Doc("feature_orders-v1_2026-10-26.md", Project, "See [board](backlog/README.md).\n")).Contains("BODY-PATH"));
+        True_("a link inside the generated wave table is not BODY-PATH",
+            !Rules(
+                Doc("waves/wave-1/wave-1_2026-10-26.md", "kind: wave\nstatus: open\ndate: 2026-10-26",
+                    $"{WaveTable.Begin}\n| [`wave-1_lead_2026-10-26`](../../wave-1_lead_2026-10-26.md) |\n{WaveTable.End}\n"),
+                lead, project).Contains("BODY-PATH"));
+        // A wave document and the waves context never move (waves/ holds them open or done),
+        // so a link into them never goes stale -- and a #section anchor is worth keeping.
+        True_("a link into the wave document, with an anchor, is not BODY-PATH",
+            !Rules(Doc("wave-1_lead_2026-10-26.md", QueuedPlanIn("lead"), "Run the [gate](waves/wave-1/wave-1_2026-10-26.md#integration-gate).\n"), wave1).Contains("BODY-PATH"));
+        True_("a link to the waves context is not BODY-PATH",
+            !Rules(Doc("waves/wave-1/wave-1_2026-10-26.md", "kind: wave\nstatus: open\ndate: 2026-10-26", "Read [context](../waves-context.md) first.\n")).Contains("BODY-PATH"));
+        True_("a wave document linking a plan back on the board is still BODY-PATH",
+            Rules(Doc("waves/wave-1/wave-1_2026-10-26.md", "kind: wave\nstatus: open\ndate: 2026-10-26", "Read [context](../waves-context.md), then [lead](../../wave-1_lead_2026-10-26.md).\n"), lead, project).Contains("BODY-PATH"));
+        True_("a plan whose name merely starts with 'waves' is still BODY-PATH",
+            Rules(Doc("feature_orders-v1_2026-10-26.md", Project, "See [ui](waves-ui_2026-10-26.md).\n")).Contains("BODY-PATH"));
+        True_("a name in prose is not BODY-PATH",
+            !Rules(Doc("feature_orders-v1_2026-10-26.md", Project, "Start at `wave-1_lead_2026-10-26`.\n"), lead, wave1).Contains("BODY-PATH"));
+
         // --- bug_ and wave-<n>_ are plan prefixes too ---------------------------------
         // bug_ is feature_'s sibling: a kind prefix, stripped, so a stub promoted to a bug
         // keeps its name. wave-<n>_ is not stripped: the wave is part of the name, so every
@@ -1836,8 +2183,11 @@ static class SelfTest
             Rules(Doc("feature_read_2026-10-26.md", QueuedPlan + "\nwave: wave-3")).Contains("UNKNOWN-WAVE"));
         True_("tier: low, medium or high is fine",
             !Rules(Doc("feature_t_2026-10-26.md", QueuedPlan + "\ntier: medium")).Contains("BAD-TIER"));
-        True_("tier: outside spec-tier's words is BAD-TIER",
+        True_("tier: outside plan-tier's words is BAD-TIER",
             Rules(Doc("feature_t_2026-10-26.md", QueuedPlan + "\ntier: High")).Contains("BAD-TIER"));
+        True_("BAD-TIER names plan-tier, the skill that owns the words",
+            Validator.Check([Doc("feature_t_2026-10-26.md", QueuedPlan + "\ntier: High")])
+                .Single(f => f.Rule == "BAD-TIER").Detail.EndsWith("(plan-tier)", StringComparison.Ordinal));
         True_("an empty author: is EMPTY-FIELD",
             Rules(Doc("feature_t_2026-10-26.md", QueuedPlan + "\nauthor:")).Contains("EMPTY-FIELD"));
         True_("an empty repo: is EMPTY-FIELD",
@@ -2293,6 +2643,37 @@ static class SelfTest
             WaveSign.Check("# Wave mode\n", [doneWave, leadPlan])?.Rule == "WAVE-README-STALE");
         True_("no wave and no sign is fine",
             WaveSign.Check(null, [doneWave, leadPlan]) is null);
+
+        // --- the launch block ---------------------------------------------------------------
+        // The sign carries one hidden JSON line per open wave, so a tool (a launcher
+        // extension, a session-title hook) can start and name the sessions without
+        // parsing a table meant for people.
+        System.Text.Json.JsonElement? Launch(string? s)
+        {
+            Match m = s is null ? Match.Empty : Regex.Match(s, @"^<!-- wave-launch (\{.*\}) -->$", RegexOptions.Multiline);
+            return m.Success ? System.Text.Json.JsonDocument.Parse(m.Groups[1].Value).RootElement : null;
+        }
+
+        string Sessions(System.Text.Json.JsonElement? block) => block is null
+            ? "<none>"
+            : string.Join(";", block.Value.GetProperty("sessions").EnumerateArray().Select(e =>
+                $"{e.GetProperty("name").GetString()}|{e.GetProperty("role").GetString()}|{e.GetProperty("prompt").GetString()}|{e.GetProperty("status").GetString()}"));
+
+        System.Text.Json.JsonElement? launch = Launch(sign);
+        True_("the sign carries a launch block naming its wave",
+            launch is not null && launch.Value.GetProperty("wave").GetInt32() == 1);
+        Eq("the launch block lists the lead first, then each track, with its prompt and status",
+            Sessions(launch),
+            "wave-1-lead|lead|/ai-plugins-and-skills:wave-workflow lead|queued;" +
+            "wave-1-legacy|track|/ai-plugins-and-skills:wave-workflow track legacy|queued;" +
+            "wave-1-read|track|/ai-plugins-and-skills:wave-workflow track read|in-progress");
+        PlanDoc readSecond = Doc("wave-1_read-later_2026-10-26.md", "kind: plan\nstatus: queued\ntrack: read\nwave: wave-1\ntier: high");
+        PlanDoc readDone = Doc("completed/wave-1_read-first_2026-10-26.md", "kind: plan\nstatus: completed\ncompleted: 2026-10-28\ntrack: read\nwave: wave-1\ntier: high");
+        Eq("a track with several plans is one session, as busy as its busiest plan",
+            Sessions(Launch(WaveSign.Render([waveDoc, readDone, readSecond]))),
+            "wave-1-read|track|/ai-plugins-and-skills:wave-workflow track read|queued");
+        True_("the sign no longer asks anyone to rename a session",
+            sign is not null && !sign.Contains("rename", StringComparison.OrdinalIgnoreCase));
 
         foreach (string f in failures)
         {

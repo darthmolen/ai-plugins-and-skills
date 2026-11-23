@@ -12,6 +12,8 @@ A **skill** is a piece of situational knowledge that you give to an AI agent. It
 - **Tools the agent can use** — a script the agent invokes when needed (`sql-query`, `bulk-rename`, `azure-servicebus-operations`), with the SKILL.md explaining when to reach for it and how to read its output.
 - **General knowledge about a subject** — coding standards for a language, architectural patterns for a stack, the operational quirks of a specific service.
 
+A language or framework skill's suffix says which kind of knowledge it holds: `-architect` for project setup and design (`python-architect`), `-developer` for application code (`python-developer`), and `-engineer` for infrastructure (`azure-infra-engineer`).
+
 The point is collaboration. You and the agent are working together; skills are the shared vocabulary that keeps both of you on the same page without you having to re-explain everything in every prompt. The agent loads the skill when its description matches what you're doing — no manual ceremony required in most harnesses.
 
 Skills follow the open [**Agent Skills specification**](https://agentskills.io) — a single `SKILL.md` per skill, with YAML frontmatter naming the skill and describing when to activate it, followed by Markdown instructions for the agent. Because the format is portable, the skills in this repo work across Claude Code, Copilot CLI, and VS Code Copilot — same files, different harness wiring.
@@ -32,8 +34,10 @@ The skills themselves are identical across all three — what changes is how eac
 
 ## Where the skills live
 
-**Source of truth:** this folder. Each subdirectory is a self-contained skill — `SKILL.md` plus any companion files it needs (e.g., subagent templates like [plan-intake-review/plan-reviewer.md](plan-intake-review/plan-reviewer.md) and [code-intake-review/code-reviewer.md](code-intake-review/code-reviewer.md)).
+**Source of truth:** this folder. Each subdirectory is a self-contained skill — `SKILL.md` plus any companion files it needs (e.g., subagent templates like [plan-intake-review/plan-reviewer.md](plan-intake-review/plan-reviewer.md) and [code-intake-review/code-reviewer.md](code-intake-review/code-reviewer.md), or scripts like `session-workflow/scripts/session.ps1`).
+
+A few pieces live outside this folder because they are Claude Code features rather than skills: the wave agents in [`agents/`](../agents/), the `python-project` slash command in [`commands/`](../commands/), and the `wave-session-title` hook in [`hooks/`](../hooks/). Each wraps a skill here, so the other harnesses get the same behaviour by invoking the skill.
 
 For repo-wide structure, build scripts, and platform support matrix, see [documentation/ARCHITECTURE.md](../documentation/ARCHITECTURE.md).
 
-For the workflows that *use* these skills (spec-driven coding, plan review, code review), see [documentation/workflows/](../documentation/workflows/README.md).
+For the workflows that *use* these skills (spec-driven coding, plan review, code review, waves, sessions and tickets), see [documentation/workflows/](../documentation/workflows/README.md). The planning terms they share are defined in [documentation/VOCABULARY.md](../documentation/VOCABULARY.md).

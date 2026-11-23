@@ -9,7 +9,7 @@ metadata:
 
 Walk the open findings from reviewed code-review slices, classify each one with technical rigor, and apply the accepted/merged ones to the codebase.
 
-**Core principle:** Same as `superpowers:receiving-code-review` — verify before implementing. No performative agreement. Technical rigor always. The slice spec is the audit trail; never delete a reviewer's words, only annotate `Status at HEAD`.
+**Core principle:** Same as `superpowers:receiving-code-review` — verify before implementing. No performative agreement. Technical rigor always. The slice is the audit trail; never delete a reviewer's words, only annotate `Status at HEAD`.
 
 ## When to Use
 
@@ -19,15 +19,21 @@ After `code-review-plan-execute` finishes — slices are in `planning/code-revie
 
 ### Step 1: Find Slices to Apply
 
-Slice spec filenames may be in either of two forms — current (`*-code-review-<initiative>-slice-NN-*.md`) or legacy (`*-code-review-slice-NN-*.md`). Both are honored.
-
 ```bash
 ls planning/code-reviews/needs-review/reviewed/*-code-review-*-slice-*.md \
-   planning/code-reviews/needs-review/reviewed/*-code-review-slice-*.md 2>/dev/null \
-   | sort -u
+   planning/code-reviews/needs-review/reviewed/*-code-review-slice-*.md 2>/dev/null | sort -u
 ```
 
-Filter to those with `status: reviewed`. (Skip `triaging` files unless the user is explicitly resuming a stopped session — see Step 2.)
+The first glob catches the current form; the second catches legacy
+`YYYY-MM-DD-code-review-slice-NN-<slug>.md` files, which the first does not match.
+
+**Moves use `git mv`** when the file is tracked, and plain `mv` when it is not yet tracked
+(`git ls-files --error-unmatch <file>` fails). This applies to every move below.
+
+Filter to `kind: slice` with `status: reviewed`. A file with no `kind:` is a legacy slice. Migrate it
+first (add `kind: slice`, `status:`, `date:` and `initiative:`, and turn `parent_plan:` and
+`plan_docs:` into names), because closing an initiative depends on `initiative:` and
+`parent_plan:`. (Skip `triaging` files unless the user is explicitly resuming a stopped session — see Step 2.)
 
 - **No files:** "No reviewed slices to apply. Run `code-review-plan-execute` first if you have queued slices."
 - **One file:** Confirm with user: "Apply findings from `<filename>`?"
@@ -108,7 +114,7 @@ Same as `superpowers:receiving-code-review`:
 When every finding in the slice has a non-`open` `Status at HEAD`:
 - Move file to `completed/`:
   ```bash
-  mv planning/code-reviews/needs-review/reviewed/<file>.md planning/code-reviews/needs-review/completed/<file>.md
+  git mv planning/code-reviews/needs-review/reviewed/<file>.md planning/code-reviews/needs-review/completed/<file>.md
   ```
 - Update frontmatter:
   ```yaml
@@ -117,7 +123,35 @@ When every finding in the slice has a non-`open` `Status at HEAD`:
   status_note: ""
   ```
 
-If some findings remain `open` (flagged or deferred), leave the file in `reviewed/` with `status: triaging` so you can come back to it. Update `status_note` to summarize what's left (e.g., "2 flagged findings awaiting design decision on intervention handler").
+If some findings remain `open` (flagged), leave the file in `reviewed/` with `status: triaging` so you can come back to it. Update `status_note` to summarize what's left (e.g., "2 flagged findings awaiting design decision on intervention handler").
+
+### Step 6a: Close the Initiative
+
+After a slice completes, check its initiative. If **every** `kind: slice` with this `initiative:` is
+now `completed` (none queued, reviewing, failed, reviewed or triaging), the review is over. Retire
+everything it produced in one pass:
+
+1. **The open synthesis.** Set `status: done` and leave out `superseded_by`, because nothing
+   replaced it. Then:
+   ```bash
+   git mv planning/code-reviews/<date>-code-review-<initiative>-synthesis-NN.md planning/code-reviews/needs-review/completed/
+   ```
+   No open synthesis? Skip this. One may never have been written.
+2. **The meta-plan** named by the slices' `parent_plan:`. It is `in-progress`. Complete it like
+   any plan: write its Status block (slices, findings accepted/merged/rejected/deferred, and what
+   was deferred to where) to a separate file, not into the meta-plan, then
+   ```bash
+   dotnet run "$plan/plan-doc.cs" -- close --doc planning/in-progress/<meta-plan>.md --to completed \
+     --status-block ./statusblock.md --completed <YYYY-MM-DD>
+   ```
+   (`plan-workflow` sets `$plan`.) `close` appends the block itself and refuses a document that
+   already has a `## Status` section. If you are not using `close`, append the block to the
+   meta-plan, `git mv` it to `completed/`, and set `status: completed` and `completed:`.
+3. Run `plan-doc.cs validate --path planning`, then commit with
+   `[PLAN] Complete: code review <initiative>`, or `[FEATURE]` if the accepted fixes ship in the
+   same commit.
+
+If some slices are still open, say which ones and leave everything where it is.
 
 ### Step 7: Notify
 
@@ -125,7 +159,8 @@ After processing each slice (or at end of batch), summarize to chat:
 - Slice ID + name
 - Counts: accepted, merged, rejected, flagged, deferred
 - File location
-- If batch: re-run `code-synthesize-reviews` once finished — open findings have shifted, fresh synthesis tells you what's actually left.
+- If batch and the initiative is still open: re-run `code-synthesize-reviews` once finished. Open findings have shifted, and the next synthesis (NN+1) shows what is actually left.
+- If the initiative closed: say so, and name the completed meta-plan and the retired synthesis.
 
 ## Verifying Edits
 
@@ -133,8 +168,8 @@ For accepted/merged findings, when applying:
 
 - Read the file at the cited line BEFORE editing — confirm context.
 - Make the smallest edit that resolves the finding.
-- For C# files: respect `CODING-STANDARDS.md` (StyleCop, CRLF, etc.).
-- For tests / behaviour-changing edits: run the relevant test suite if it's quick.
+- For C# files: load `ai-plugins-and-skills:csharp-quality-developer` first (StyleCop, CRLF, `this.`).
+- For behaviour-changing fixes: follow `ai-plugins-and-skills:test-filter-development`. Write a test that fails on the defect the finding describes, fix it, then seed a mutant. The finding is the mutant, so a test that cannot fail on it does not close the finding.
 - If the edit is risky or non-obvious, pause and discuss with the user before committing.
 
 The slice's `head_sha` is the snapshot the reviewer reviewed against. Your edits land at HEAD-of-branch (whatever's checked out now). When recording `resolved-at-<SHA>`, use the SHA AFTER your fix is committed — or `pending-commit` if you haven't committed yet.
@@ -143,8 +178,9 @@ The slice's `head_sha` is the snapshot the reviewer reviewed against. Your edits
 
 - Auto-accept Critical findings without per-item user confirmation.
 - Mass-apply findings via batch script — each finding is a judgment call.
-- Rewrite the reviewer's text. The slice spec is the audit trail.
+- Rewrite the reviewer's text. The slice is the audit trail.
 - Move a slice to `completed/` with open findings still present.
+- Complete the meta-plan or retire the synthesis while any slice of the initiative is still open.
 - Skip the verification step (Step 4.2) — Status at HEAD can be stale.
 - Treat `flag` as `reject` — flagged findings stay visible in synthesis.
 

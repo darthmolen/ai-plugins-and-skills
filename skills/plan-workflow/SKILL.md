@@ -9,12 +9,15 @@ metadata:
 
 **A plan is one piece of work.** The spec it delivers (`system-spec`) is the map, and a wave
 (`wave-workflow`) runs several plans in parallel. Each can be used on its own or with the others.
+A plan that changes behaviour carries a **feature-spec**: the piece of spec it changes, which merges
+back into the system spec when the plan completes. The section's shape is
+`plan-writing-syntax`'s, and the system spec's format is `system-spec`'s.
 
 This skill is the base layer of all spec-driven work. It governs how planning documents move through the kanban directories at `planning/` — whether you are working solo (simple spec-driven) or feeding into the adversarial review pipeline (complex spec-driven). Every layer of the workflow builds on top of this one; the kanban and commit discipline here apply regardless of which path you are on.
 
 The two layers:
 
-- **Simple spec-driven** — use this skill alone to author + execute the plan; no *plan-review* second session. The code-review caboose still applies to anything that ships (the review floor) — see the `spec-tier` skill.
+- **Simple spec-driven** — use this skill alone to author + execute the plan; no *plan-review* second session. The code-review caboose still applies to anything that ships (the review floor) — see the `plan-tier` skill.
 - **Complex spec-driven (adversarial)** — use this skill plus `plan-send-review`, `plan-intake-review`, and `plan-receive-review`. The review trio inserts a gate into the same kanban flow before execution starts; the directories and commit discipline here still apply throughout.
 
 **This skill owns *where a document lives and when it moves*. `plan-writing-syntax` owns *what is written on it*** — the frontmatter, the status vocabularies, and cross-references. Read that one before writing a document; read this one before moving it.
@@ -32,7 +35,8 @@ planning/
 ├── reminders/         # Tasks a person must do; completed/ underneath
 ├── waves/             # Scheduling documents across many plans, and the waves' context; one folder per wave allowed
 ├── evidence/          # Artifacts a plan produced and its Status block cites
-└── needs-review/      # The review pipeline's copies — never the plan of record
+├── needs-review/      # The review pipeline's copies — never the plan of record
+└── code-reviews/      # The code-review pipeline: slices in needs-review/*, syntheses at the top
 ```
 
 The first six are **the board**, and they hold plans and stubs alike. **A stub is a baby plan**
@@ -45,10 +49,12 @@ and then outranked belongs there exactly as much as an idea captured mid-session
 stubs became baby plans, such a plan went back to the queue root, where it was a permanent false positive on "what
 is ready to start".
 
-The last four are not the board. A reminder is work for a *person*; a `needs-review/` copy is
+The last five are not the board. A reminder is work for a *person*; a `needs-review/` copy is
 explicitly never the document of record; a wave schedules across many plans rather than being
-scheduled itself; `evidence/` holds artifacts, not documents. They are different kinds of thing,
-not lifecycle states, which is why they keep their own vocabularies.
+scheduled itself; `evidence/` holds artifacts, not documents; `code-reviews/` holds a review's
+slices and syntheses (`kind: slice`, `kind: synthesis`) while the meta-plan that spawned them
+moves on the board like any plan. They are different kinds of thing, not lifecycle states, which
+is why they keep their own vocabularies.
 
 Every directory is committed to source control. **No document is ever deleted — only moved.**
 
@@ -84,11 +90,27 @@ Did plan mode just produce a new plan?
 │
 └─ NO — Is this an update to an existing plan?
           │
-          ├─ Execution finished successfully →
-          │    1. Append a ## Status section to the document (see template below).
-          │    2. Move the document from planning/in-progress/ to planning/completed/.
-          │    3. If it has delivers:, set each feature it names to Shipped or
+          ├─ Execution finished successfully (the development is done and
+          │  going to a PR) →
+          │    1. Any success criterion that can only be checked after the PR —
+          │       PR validation, a deploy, a run in a real environment, a smoke
+          │       test, a sign-off — becomes a verify reminder (reminders-set)
+          │       whose plan: names this plan. It does not hold the plan open.
+          │    2. Append a ## Status section to the document (see template below),
+          │       listing those reminders under ### Reminders Set.
+          │    3. Move the document from planning/in-progress/ to planning/completed/,
+          │       in the same pull request as the code and the reminders.
+          │    4. If it has a ## Feature-spec section, merge each block into the
+          │       system spec (agree / amend / add) in the same pull request as
+          │       the code. If the area has no system spec, the Status block says
+          │       so; system-spec-backfill picks those plans up later.
+          │    5. If it has delivers:, set each feature it names to Shipped or
           │       Shipped interim in the spec, and run spec-table --fix (system-spec).
+          │    6. Push the branch and raise the PR — ado-pr on Azure DevOps,
+          │       gh pr create on GitHub. A session whose mode withholds push
+          │       (session-workflow's plan, implement or commit; a wave track
+          │       runs in commit) stops here, and a session that holds push
+          │       (ship, or a wave lead in lead) raises the PR.
           │
           ├─ Execution interrupted / not completed →
           │    1. Append a ## Status section noting where work stopped.
@@ -141,6 +163,10 @@ planning/wave-1_read_2026-10-26.md                          # wave 1's read trac
 
 **The filename never changes.** Not when the document moves, not when it is promoted — kind does not change, so neither does the prefix. The name is the document's identity and the directory is its status, which is what lets another document reference it by name and go on resolving after it moves.
 
+**Documents name each other, and tooling supplies paths.** That holds in frontmatter and in the
+body. A hand-written link to another planning document in an open document is `BODY-PATH`. So a
+move edits only the document that moved: one `git mv` and one `status:` line.
+
 The prefix used to carry *status* (`feature_` → `promoted_` → `closed_`), which renamed the file on every move. That is retired: `kind:` was already doing the job, and a filename that changes is drift waiting to happen.
 
 Two rules, deliberately not symmetric:
@@ -177,6 +203,10 @@ One sentence: what this plan achieves when done.
 
 ## Approach
 How the work will be done. Include files to be modified and any dependencies.
+
+## Feature-spec
+Only for a plan that changes behaviour. One block per feature, each naming its target and merge
+kind (plan-writing-syntax). Omit the section for a plan that changes no behaviour.
 
 ## Phases
 ### Phase 1 — [Name]
@@ -220,11 +250,32 @@ Append this block to the document **before moving it**, and update the frontmatt
 
 ### Backlog Items Created
 - <stub-name> — one-line summary
+
+### Reminders Set
+- <category>_<slug>_<date> — what someone has to check after the PR
 ```
 
 **Write it in the minutes after finishing, not from a diff a week later.** The deviations and the lessons are the half nothing else in the repository records, and they are the half that is reconstructed worst.
 
 **A completed plan is not a to-do list.** Work that was in scope and did not land leaves as a backlog stub with a name, not as a "still to do" section inside a document filed under `completed/`.
+
+### The plan completes at the PR
+
+When the development is done and going to a pull request, the plan moves to `completed/` in that
+pull request. It does not wait for the PR's validation, the deploy, a test run in an environment,
+or a smoke check.
+
+Whatever is still to be checked becomes a `verify` reminder (`reminders-set`), one per check, with
+`plan:` naming the plan, **in the same PR as the code and the completed plan**. The Status block
+lists them under `### Reminders Set`. A reminder outlives the plan by design, so nothing is lost
+when the plan closes, and no second PR is needed just to clean up the board.
+
+The split:
+
+| Left over at the PR | Where it goes |
+|---|---|
+| In-scope work that was not done | a backlog stub |
+| A check on work that was done | a `verify` reminder |
 
 ---
 
@@ -401,40 +452,14 @@ dotnet run "$plan\plan-doc.cs" -- validate --path planning --specs docs
 # Regenerate each spec's status table from its feature lines and the plans that deliver them
 dotnet run "$plan\plan-doc.cs" -- spec-table --specs docs --path planning --fix
 
-dotnet run "$plan\plan-doc.cs" -- --selftest    # 186-case battery; exit 0 iff all pass
+dotnet run "$plan\plan-doc.cs" -- --selftest    # 282-case battery; exit 0 iff all pass
 ```
 
 `--dry-run` prints the new frontmatter and the destination without touching anything.
 
-### What `close` refuses
-
-Each refusal is a document that would otherwise lie about itself:
-
-- a status whose required field is missing (`completed` without `completed:`, `blocked` without
-  `blocked_on:`, `not-implemented` without `reason:` **and** the field that reason must name)
-- a `--decided-on` that is not ISO `YYYY-MM-DD`
-- a `--reason-target` shaped like a path rather than a name
-- a document that already carries a `## Status` section — it would append a second
-- a document whose `status:` and directory **already** disagree; something upstream is broken and
-  this is not the tool to paper over it
-
-### The `git add` that looks redundant and is not
-
-`close` runs `git add` on the destination after `git mv`. That is load-bearing: **`git mv` stages
-the rename from the blob already in the index**, so the frontmatter rewrite — a working-tree change
-never added — is left unstaged, and the commit moves the file while committing its *old* content.
-Observed for real: a document landed in `completed/` still saying `status: in-progress`, which is
-the precise drift this script exists to prevent, shipped by the script's own move.
-
-That line is covered by `test/Invoke-CloseIntegrationCheck.ps1`, not by `--selftest`. It is a property
-of the git index, which no pure battery reaches — and a mutant deleting the `git add` **survived**
-the battery, which under `test-filter-development` rejects the test rather than the mutant.
-
-```powershell
-.\test\Invoke-CloseIntegrationCheck.ps1     # 24 checks against a throwaway repo, exit 0 required
-```
-
-PowerShell 7, matching the other PowerShell checks in this collection — not bash, so it runs on Windows without Git Bash and on Linux and macOS alike.
+`close` refuses a move that would leave a document lying about itself, and runs a `git add` after
+`git mv` that looks redundant and is not. Both, and the integration check that covers the second,
+are in [references/close-mechanics.md](references/close-mechanics.md).
 
 ## Commit Checkpoints
 
@@ -458,6 +483,8 @@ Example: `[FEATURE] auth-refactor phase 1 complete — JWT validation extracted`
 
 - **One active document per track** in `planning/in-progress/`. Most work is `track: main`, so most of the time this reads as one active plan. If something must start urgently on a track that is already busy, move the current document back to `planning/` with a status note first.
 - **Tracks must be independent.** A document only earns a track of its own if its `Files Expected to Change` set is disjoint from every other in-progress document's. Overlapping work queues, or a wave resolves the overlap (`wave-workflow`); it never runs in parallel as is.
+- **A plan never waits on its own verification.** Development done and going to a PR means the plan completes; the checks that come after the PR are `verify` reminders.
+- **The close hands off to PR raising.** After the plan is in `completed/`, the next step is to push and raise the PR — `ado-pr` on Azure DevOps, `gh pr create` on GitHub — unless the session's mode withholds push. This skill ends at the commit; the PR step owns the pull request.
 - **Never delete plan documents.** Move them; the history is the corpus. **Promotion is not deletion** — deleting a stub on promotion is how one plan came to point at a file that did not exist.
 - **A move is two edits.** `git mv`, and the `status:` field. One without the other is exactly the drift the field was introduced to end. It is never three: the filename does not change.
 - **Backlog is not a graveyard.** Each stub should have a `Trigger for Promotion` — if it will never be acted on, move it to `not-implemented/` with a reason rather than leaving it deferred forever.
