@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-27T00:39:54Z",
+  "generated": "2026-11-23T01:40:40Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -74,9 +74,9 @@
       "order": null
     },
     {
-      "name": "angular-expert",
-      "folder": "angular-expert",
-      "path": "skills/angular-expert",
+      "name": "angular-developer",
+      "folder": "angular-developer",
+      "path": "skills/angular-developer",
       "plugin": "ai-plugins-and-skills",
       "description": "Angular 20+/TypeScript frontend expert. PROACTIVELY use when working with Angular components, signals, RxJS, NgRx, angular.json configuration, or ng serve issues.",
       "category": "domain-skills",
@@ -101,36 +101,54 @@
       "order": null
     },
     {
-      "name": "python-pro",
-      "folder": "python-pro",
-      "path": "skills/python-pro",
+      "name": "python-architect",
+      "folder": "python-architect",
+      "path": "skills/python-architect",
       "plugin": "ai-plugins-and-skills",
-      "description": "Python backend expert. PROACTIVELY use when working with Django, FastAPI, Flask, Pydantic, SQLAlchemy, or async Python APIs. Covers backend patterns, data validation, and ORM best practices.",
+      "description": "Python project setup and tooling standard: pyproject.toml, PEP 735 dependency groups, uv and uv.lock, ruff, pytest pythonpath, requires-python, flat versus src layout, CLI exit codes, and the CI pipeline (an Azure DevOps template, with the same steps for GitHub Actions). Use when starting a Python project, adding tests or linting to one, reviewing a requirements.txt or setup.py project, or answering 'how should this Python project be set up'. For writing the code, use python-developer (backend) or python-data (dataframes, Fabric). To scaffold or audit a project, use python-project. To add pyright and pre-commit hooks on top, use python-quality-install.",
       "category": "domain-skills",
       "order": null
     },
     {
-      "name": "react-specialist",
-      "folder": "react-specialist",
-      "path": "skills/react-specialist",
+      "name": "python-data",
+      "folder": "python-data",
+      "path": "skills/python-data",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Python data code for reporting and Microsoft Fabric work: pandas and polars idioms, explicit dtypes, joins that cannot silently duplicate rows, money and timestamps, notebook code versus importable modules, and testing transforms with small fixture frames. Use when writing or reviewing dataframe code, a Fabric notebook, a billing or reporting job, or tests for a transform. For project setup use python-architect; for backend services use python-developer; for Fabric APIs, Spark and Lakehouse operations use Microsoft's skills-for-fabric.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "python-developer",
+      "folder": "python-developer",
+      "path": "skills/python-developer",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Python backend code. PROACTIVELY use when working with Django, FastAPI, Flask, Pydantic, SQLAlchemy, or async Python APIs. Covers backend patterns, data validation, and ORM best practices. For project setup (pyproject.toml, uv, ruff, pytest config, layout) use python-architect; for dataframe, reporting and Fabric notebook code use python-data.",
+      "category": "domain-skills",
+      "order": null
+    },
+    {
+      "name": "react-developer",
+      "folder": "react-developer",
+      "path": "skills/react-developer",
       "plugin": "ai-plugins-and-skills",
       "description": "React best practices expert. PROACTIVELY use when working with React components, JSX, hooks (useState, useEffect), state management, or component architecture and performance optimization.",
       "category": "domain-skills",
       "order": null
     },
     {
-      "name": "sql-pro",
-      "folder": "sql-pro",
-      "path": "skills/sql-pro",
+      "name": "sql-developer",
+      "folder": "sql-developer",
+      "path": "skills/sql-developer",
       "plugin": "ai-plugins-and-skills",
       "description": "Expert SQL developer specializing in complex query optimization, database design, and performance tuning across PostgreSQL, MySQL, SQL Server, and Oracle. Masters advanced SQL features, indexing strategies, and data warehousing patterns.",
       "category": "domain-skills",
       "order": null
     },
     {
-      "name": "typescript-pro",
-      "folder": "typescript-pro",
-      "path": "skills/typescript-pro",
+      "name": "typescript-developer",
+      "folder": "typescript-developer",
+      "path": "skills/typescript-developer",
       "plugin": "ai-plugins-and-skills",
       "description": "TypeScript best practices expert. PROACTIVELY use when working with TypeScript/JavaScript files (.ts, .tsx, .js, .jsx), type errors, ESLint issues, or strict mode configuration. Covers patterns, ESLint best practices, and strict type handling.",
       "category": "domain-skills",
@@ -159,7 +177,7 @@
       "folder": "python-quality-install",
       "path": "skills/python-quality-install",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when initializing a new Python project or adding quality tooling to an existing one - sets up ruff linter and formatter, pyright type checker, and pre-commit hooks with opinionated defaults that enforce python-quality-developer standards",
+      "description": "Use when initializing a new Python project or adding quality tooling to an existing one - sets up ruff linter and formatter, pyright type checker, and pre-commit hooks with opinionated defaults that enforce python-quality-developer standards. For the project setup standard itself (pyproject.toml, uv and uv.lock, dependency groups, layout, CI pipeline) use python-architect, and python-project to scaffold or audit it",
       "category": "language-helpers",
       "order": null
     },
@@ -204,7 +222,7 @@
       "folder": "code-send-review",
       "path": "skills/code-send-review",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when queueing a slice of a branch for code review \u2014 builds a slice spec from a commit range, focus areas, and plan-doc refs, and drops it in planning/code-reviews/needs-review/ for the intake loop to pick up",
+      "description": "Use when queueing a slice of a branch for code review \u2014 builds a slice from a commit range, focus areas, and plan-doc refs, and drops it in planning/code-reviews/needs-review/ for the intake loop to pick up",
       "category": "review-helpers",
       "order": 20
     },
@@ -231,7 +249,7 @@
       "folder": "code-review-plan-create",
       "path": "skills/code-review-plan-create",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when ready to plan a code review of a development branch \u2014 walks the branch, discovers existing plan documents, maps commits to plans, Q&As unmapped commits with the user, and writes a meta-plan with a slice table at planning/YYYY-MM-DD-code-review-plan-<slug>.md",
+      "description": "Use when ready to plan a code review of a development branch \u2014 walks the branch, discovers existing plan documents, maps commits to plans, Q&As unmapped commits with the user, and writes a meta-plan with a slice table at planning/code-review-{initiative}_{date}.md, a queued plan on the board",
       "category": "review-helpers",
       "order": 30
     },
@@ -240,7 +258,7 @@
       "folder": "code-review-seed-slices",
       "path": "skills/code-review-seed-slices",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when a code-review meta-plan is finalized and you need to fan it out into one slice spec per row in the meta-plan's slice table \u2014 produces N files in planning/code-reviews/needs-review/ ready for code-intake-review to drain",
+      "description": "Use when a code-review meta-plan is finalized and you need to fan it out into one slice per row in the meta-plan's slice table \u2014 produces N kind slice files in planning/code-reviews/needs-review/ ready for code-intake-review to drain",
       "category": "review-helpers",
       "order": 31
     },
@@ -258,7 +276,7 @@
       "folder": "code-synthesize-reviews",
       "path": "skills/code-synthesize-reviews",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when multiple code-review slices have been reviewed and you need a consolidated pre-merge action list \u2014 reads all slice specs in reviewed/ and completed/, filters findings by Status at HEAD: open, groups by severity and file, emits planning/code-reviews/SYNTHESIS-<slug>.md",
+      "description": "Use when multiple code-review slices have been reviewed and you need a consolidated pre-merge action list \u2014 reads one initiative's slices, filters findings by Status at HEAD open, groups by severity and file, and writes a new append-only synthesis at planning/code-reviews/{date}-code-review-{initiative}-synthesis-{NN}.md that supersedes the previous one",
       "category": "review-helpers",
       "order": 33
     },
@@ -267,7 +285,7 @@
       "folder": "codebase-mapper",
       "path": "skills/codebase-mapper",
       "plugin": "ai-plugins-and-skills",
-      "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Writes the map to documentation/CODEBASE-MAP.md and a short pointer to it in CLAUDE.md, so the map is read on demand instead of loaded every session. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
+      "description": "Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing. Writes the map to CODEBASE-MAP.md in the repo's docs folder (documentation/ or docs/) and a short pointer to it in CLAUDE.md, so the map is read on demand instead of loaded every session. Use when mapping a codebase, generating architecture documentation, updating claude.md structure, or onboarding to a new project.",
       "category": "tools",
       "order": 1
     },
@@ -279,6 +297,15 @@
       "description": "Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks. Use this skill when working on brownfield codebases, large repos (100k+ LOC), complex bugs, multi-file refactors, or features requiring deep codebase understanding. Triggers include requests to fix bugs in unfamiliar code, implement features in large codebases, understand complex code flows, or when the user mentions \"research plan implement\", \"ACE-FCA\", or \"frequent compaction\". This workflow prevents context window exhaustion and produces high-quality, reviewable artifacts.",
       "category": "tools",
       "order": 2
+    },
+    {
+      "name": "ado-pr",
+      "folder": "ado-pr",
+      "path": "skills/ado-pr",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when creating or updating an Azure DevOps pull request via the ado MCP tools \u2014 after plan-workflow's close, for a wave lead, as a draft with work items linked \u2014 including when the branch may already have an active PR, or a create call has already been rejected for a too-long description",
+      "category": "tools",
+      "order": null
     },
     {
       "name": "azure-servicebus-operations",
@@ -313,6 +340,15 @@
       "path": "skills/psql-query",
       "plugin": "ai-plugins-and-skills",
       "description": "Use when running ad-hoc read-only SQL against Azure Database for PostgreSQL \u2014 exploring tables, sampling rows, checking key uniqueness/overlap across tables, inspecting pg_stat_* / pg_catalog, or producing JSON/CSV for a pipeline. Read-only by construction (server-enforced read-only transaction + client-side guard, always rolled back; no INSERT/UPDATE/DELETE/DDL/COPY/dblink). Returns TOON by default for token-efficient consumption by Claude; --format=json|table|csv for other consumers. This is the PostgreSQL counterpart to sql-query (which targets Azure SQL only).",
+      "category": "tools",
+      "order": null
+    },
+    {
+      "name": "python-project",
+      "folder": "python-project",
+      "path": "skills/python-project",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when scaffolding a new Python project or auditing an existing one against the python-architect standard. `new --kind script|package` writes pyproject.toml (PEP 735 dependency groups, ruff, pytest pythonpath, requires-python), tests, .gitignore and an Azure DevOps pipeline, then runs uv lock; it is a dry run by default and refuses to overwrite. `check` reports bare requirements*.txt, setup.py or setup.cfg, sys.path edits in tests, and a missing uv.lock, requires-python, dependency-groups or ruff config, with file and line, and exits 0 clean, 1 findings, 2 could not run.",
       "category": "tools",
       "order": null
     },
@@ -362,6 +398,15 @@
       "order": null
     },
     {
+      "name": "plan-tier",
+      "folder": "plan-tier",
+      "path": "skills/plan-tier",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Route a task to a Low/Medium/High plan tier by stakes, then enforce the matching plan depth, review gates, and calibration. Use when starting any plan, deciding how much detail a plan needs, onboarding developers to the planning standard, or when unsure whether a plan is over- or under-specified. Invoke BEFORE plan-workflow so it sets the depth plan-workflow then produces.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
       "name": "plan-workflow",
       "folder": "plan-workflow",
       "path": "skills/plan-workflow",
@@ -384,7 +429,7 @@
       "folder": "prompt-dotnet",
       "path": "skills/prompt-dotnet",
       "plugin": "ai-plugins-and-skills",
-      "description": "Composes and executes a standardized, spec-driven, test-first .NET feature prompt. Invoke as /prompt-dotnet followed by the feature description. Chains spec-tier (stakes tiering + review gates), test-filter-development (RED-GREEN-REFACTOR with captured failure output and a seeded mutant), and csharp-quality-developer; if the harness lacks those skills, the inlined discipline is the contract. Oriented to ASP.NET Core services/APIs (the integration test uses WebApplicationFactory). Use when implementing a .NET feature and you want tiered spec depth, an evidenced test filter, and mandatory review.",
+      "description": "Composes and executes a standardized, spec-driven, test-first .NET feature prompt. Invoke as /prompt-dotnet followed by the feature description. Chains plan-tier (stakes tiering + review gates), test-filter-development (RED-GREEN-REFACTOR with captured failure output and a seeded mutant), and csharp-quality-developer; if the harness lacks those skills, the inlined discipline is the contract. Oriented to ASP.NET Core services/APIs (the integration test uses WebApplicationFactory). Use when implementing a .NET feature and you want tiered plan depth, an evidenced test filter, and mandatory review.",
       "category": "workflow-composers",
       "order": null
     },
@@ -398,11 +443,20 @@
       "order": null
     },
     {
+      "name": "session-workflow",
+      "folder": "session-workflow",
+      "path": "skills/session-workflow",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when a session is about to work in a repository alongside other sessions \u2014 a ticket from ticket-start, a plan being executed, or a wave's lead or track \u2014 to start it and end it. Start writes the session file with its subject (ticket:22744, plan:{name}, wave:wave-1/auth) and mode (plan, implement, commit, ship, lead), and reads local guidance. During the session it takes and releases locks on shared resources such as ports, local databases and containers, and finds stale sessions and locks. End releases the session's locks and removes its file, at every stop. Defines the modes and the consent each grants. Drivers such as ticket-start pick the subject and the mode.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
       "name": "spec-tier",
       "folder": "spec-tier",
       "path": "skills/spec-tier",
       "plugin": "ai-plugins-and-skills",
-      "description": "Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, review gates, and calibration. Use when starting any plan or spec, deciding how much detail a plan needs, onboarding developers to the planning standard, or when unsure whether a spec is over- or under-specified. Invoke BEFORE plan-workflow so it sets the depth plan-workflow then produces.",
+      "description": "Deprecated name; invoke plan-tier.",
       "category": "workflow-composers",
       "order": null
     },
@@ -416,6 +470,24 @@
       "order": null
     },
     {
+      "name": "system-spec-backfill",
+      "folder": "system-spec-backfill",
+      "path": "skills/system-spec-backfill",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when an area was built plan by plan and its plans in planning/completed/ and planning/in-progress/ hold the behaviour that a system spec should \u2014 merges each plan's feature-spec, or an older plan's design section, into a new or existing system spec in date order under the agree/amend/add rule, citing the plan each feature came from. For a system with no usable plans, use system-spec-derive instead. The spec format belongs to system-spec.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "system-spec-derive",
+      "folder": "system-spec-derive",
+      "path": "skills/system-spec-derive",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when an existing system has no system spec and no usable plans to build one from \u2014 writes a draft system spec by reading the code, docs, ADRs and tests, with every feature citing its evidence. For a system built plan by plan whose plans are in planning/, use system-spec-backfill instead. The spec format belongs to system-spec.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
       "name": "test-filter-development",
       "folder": "test-filter-development",
       "path": "skills/test-filter-development",
@@ -425,11 +497,29 @@
       "order": null
     },
     {
+      "name": "ticket-end",
+      "folder": "ticket-end",
+      "path": "skills/ticket-end",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when an Azure DevOps ticket's work is implemented and verified and should become a draft PR, as in \"end ticket 22744\", \"ship 22744 now\", or when /ticket-start {id} ship reaches its commit. Finds the ticket's session and worktree, refuses a session still in plan mode, verifies, commits under the commit rules, completes the plan at the PR with post-PR checks as verify reminders, pushes without force, opens a draft PR through ado-pr with the work item linked, and ends the session through session-workflow at every stop. Prints the PR URL as the last line.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
+      "name": "ticket-start",
+      "folder": "ticket-start",
+      "path": "skills/ticket-start",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when someone gives an Azure DevOps work item number and wants it planned, implemented or shipped as a draft PR, as in \"start ticket 22744\", \"plan work item 22531\", \"take 22744 through to a draft PR\". Reads the ticket, creates a fresh ticket branch in its own worktree, writes the plan (plan, the default), implements and verifies it uncommitted (implement), or ships it as a draft PR linked to the ticket by running ticket-end (ship). Each mode picks up where an earlier run stopped, and an earlier mode run again redoes its work. Starts and ends its session through session-workflow, which defers to the repository's and the caller's own guidance and coordinates parallel sessions through session files and resource locks; uses per-session isolated test environments where the repository provides them, and stops cleanly when the Azure login has expired.",
+      "category": "workflow-composers",
+      "order": null
+    },
+    {
       "name": "wave-workflow",
       "folder": "wave-workflow",
       "path": "skills/wave-workflow",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when several plans need to run in parallel across tracks under one lead session \u2014 setting up a wave, starting its lead and track sessions (`lead` or `track <name>` as arguments), deciding which files each track owns and what a track does when it needs another's file, running the wave (pause points, contracts that freeze on a named day, the lead pushing verified commits), the integration window, and closing it. Sits above plan-workflow; it schedules plans and never rewrites them.",
+      "description": "Use when several plans need to run in parallel across tracks under one lead session \u2014 setting up a wave, starting its lead and track sessions (`lead` or `track {name}` as arguments), deciding which files each track owns and what a track does when it needs another's file, running the wave (pause points, contracts that freeze on a named day, the lead pushing verified commits), the integration window, and closing it. Sits above plan-workflow; it schedules plans and never rewrites them.",
       "category": "workflow-composers",
       "order": null
     }

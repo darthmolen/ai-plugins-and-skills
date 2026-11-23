@@ -1,0 +1,63 @@
+# Python project standard: the python-architect skill.
+# In a repository holding several projects, set projectDir and add a paths filter to the trigger.
+
+trigger:
+  branches:
+    include:
+      - master
+      - main
+
+parameters:
+  - name: useUv
+    displayName: Install with uv (false uses the pip fallback)
+    type: boolean
+    default: true
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  pythonVersion: '@python_version@'
+  projectDir: '$(Build.SourcesDirectory)'
+
+steps:
+  - task: UsePythonVersion@0
+    displayName: Use Python $(pythonVersion)
+    inputs:
+      versionSpec: '$(pythonVersion)'
+
+  - ${{ if eq(parameters.useUv, true) }}:
+      - script: python -m pip install uv
+        displayName: Install uv
+
+      - script: uv sync --locked
+        displayName: Install from uv.lock
+        workingDirectory: $(projectDir)
+
+      - script: uv run ruff check . && uv run ruff format --check .
+        displayName: Lint and format check
+        workingDirectory: $(projectDir)
+
+      - script: uv run pytest --junitxml=$(Agent.TempDirectory)/test-results.xml
+        displayName: Test
+        workingDirectory: $(projectDir)
+
+  - ${{ else }}:
+      - script: python -m pip install "pip>=25.1" && python -m pip install -e . --group dev
+        displayName: Install with pip
+        workingDirectory: $(projectDir)
+
+      - script: ruff check . && ruff format --check .
+        displayName: Lint and format check
+        workingDirectory: $(projectDir)
+
+      - script: pytest --junitxml=$(Agent.TempDirectory)/test-results.xml
+        displayName: Test
+        workingDirectory: $(projectDir)
+
+  - task: PublishTestResults@2
+    displayName: Publish test results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: JUnit
+      testResultsFiles: $(Agent.TempDirectory)/test-results.xml

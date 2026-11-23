@@ -1,12 +1,12 @@
 ---
-name: typescript-pro
+name: typescript-developer
 description: "TypeScript best practices expert. PROACTIVELY use when working with TypeScript/JavaScript files (.ts, .tsx, .js, .jsx), type errors, ESLint issues, or strict mode configuration. Covers patterns, ESLint best practices, and strict type handling."
 allowed-tools: Read Grep Glob Edit Write
 metadata:
   category: domain-skills
 ---
 
-# TypeScript Expert Skill
+# TypeScript Developer Skill
 
 Expert-level TypeScript patterns, ESLint best practices, and strict type handling.
 

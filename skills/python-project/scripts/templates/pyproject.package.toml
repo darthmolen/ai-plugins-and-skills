@@ -1,0 +1,28 @@
+# Python project standard: the python-architect skill. Layout: src/ (a built, published package).
+
+[project]
+name = "@name@"
+version = "0.1.0"
+description = ""
+requires-python = ">=@python_version@"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.7"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/@module@"]
+
+[tool.ruff]
+line-length = 100
+target-version = "@target_version@"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

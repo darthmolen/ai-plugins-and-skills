@@ -1,12 +1,12 @@
 ---
-name: react-specialist
+name: react-developer
 description: "React best practices expert. PROACTIVELY use when working with React components, JSX, hooks (useState, useEffect), state management, or component architecture and performance optimization."
 allowed-tools: Read Grep Glob Edit Write
 metadata:
   category: domain-skills
 ---
 
-# React Expert Skill
+# React Developer Skill
 
 Expert-level React patterns, hooks best practices, performance optimization, and component architecture.
 
@@ -451,36 +451,8 @@ function LoginForm() {
 
 ## 7. Error Boundaries
 
-```tsx
-// ✅ GOOD - Error boundary component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('Error caught:', error, info);
-    // Log to error tracking service
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback;
-    }
-    return this.props.children;
-  }
-}
-
-// Usage
-<ErrorBoundary fallback={<ErrorPage />}>
-  <App />
-</ErrorBoundary>
-```
+A class-component error boundary and how to place it are in
+[references/error-boundaries.md](references/error-boundaries.md).
 
 ---
 

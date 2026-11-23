@@ -1,14 +1,21 @@
 ---
-name: python-pro
-description: "Python backend expert. PROACTIVELY use when working with Django, FastAPI, Flask, Pydantic, SQLAlchemy, or async Python APIs. Covers backend patterns, data validation, and ORM best practices."
+name: python-developer
+description: "Python backend code. PROACTIVELY use when working with Django, FastAPI, Flask, Pydantic, SQLAlchemy, or async Python APIs. Covers backend patterns, data validation, and ORM best practices. For project setup (pyproject.toml, uv, ruff, pytest config, layout) use python-architect; for dataframe, reporting and Fabric notebook code use python-data."
 allowed-tools: Read Grep Glob Edit Write
 metadata:
   category: domain-skills
 ---
 
-# Python Expert Skill
+# Python Developer Skill
 
-Expert-level Python backend patterns for Django, FastAPI, Flask, and async programming.
+Python backend patterns for Django, FastAPI, Flask, and async programming.
+
+| For | Use |
+|---|---|
+| Project file, environment, lint, test config, layout, pipeline | `python-architect`, applied by `python-project` |
+| pandas, polars, reporting jobs, Fabric notebooks | `python-data` |
+| Test discipline: RED, GREEN, MUTATE | `test-filter-development` |
+| Lint and type rules (ruff, pyright, no `Any`, exception chaining) | `python-quality-developer`, tooling by `python-quality-install` |
 
 ---
 
@@ -366,15 +373,19 @@ class Repository(Protocol):
 
 ## 6. Testing Patterns
 
+These are pytest mechanics. The discipline (a captured failing run before the code, and a seeded
+mutant the suite must kill) is `test-filter-development`. Test configuration (`pythonpath`,
+`testpaths`) is `python-architect`.
+
 ### Pytest Fixtures
 
 ```python
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 @pytest.fixture
 async def client(app):
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 @pytest.fixture
@@ -416,73 +427,34 @@ user = UserFactory()
 inactive_user = UserFactory(is_active=False)
 ```
 
-### Mocking
+### Mocking at the boundary
+
+Mock only what leaves the process (email, HTTP to another service), and assert on what was sent.
+`mock.assert_called_once()` alone passes when the wrong message goes to the wrong address.
 
 ```python
 from unittest.mock import AsyncMock, patch
 
 @pytest.mark.asyncio
-async def test_create_user_sends_email():
-    with patch('app.services.send_email', new_callable=AsyncMock) as mock:
-        user = await create_user(UserCreate(email="test@example.com"))
-        mock.assert_called_once()
+async def test_create_user_sends_welcome_email_to_the_new_address():
+    with patch("app.services.send_email", new_callable=AsyncMock) as send:
+        await create_user(UserCreate(email="test@example.com", name="Test"))
+
+    send.assert_awaited_once()
+    assert send.await_args.kwargs["to"] == "test@example.com"
+    assert send.await_args.kwargs["template"] == "welcome"
 ```
+
+A mock stands in for the wiring it replaces, so a test that mocks a service cannot tell you the
+service is registered. Cover composition with an integration test that runs the real app, such as
+`httpx.AsyncClient` against the FastAPI app with a test database.
 
 ---
 
 ## 7. Error Handling
 
-### Custom Exception Hierarchy
-
-```python
-class AppError(Exception):
-    """Base application error"""
-    def __init__(self, message: str, code: str = "UNKNOWN"):
-        self.message = message
-        self.code = code
-        super().__init__(message)
-
-class NotFoundError(AppError):
-    def __init__(self, resource: str, id: int):
-        super().__init__(f"{resource} with id {id} not found", "NOT_FOUND")
-
-class ValidationError(AppError):
-    def __init__(self, field: str, message: str):
-        super().__init__(message, f"VALIDATION_{field.upper()}")
-```
-
-### Result Pattern
-
-```python
-from dataclasses import dataclass
-from typing import Generic, TypeVar
-
-T = TypeVar('T')
-E = TypeVar('E')
-
-@dataclass
-class Ok(Generic[T]):
-    value: T
-
-@dataclass
-class Err(Generic[E]):
-    error: E
-
-Result = Ok[T] | Err[E]
-
-async def get_user(user_id: int) -> Result[User, str]:
-    user = await db.get(User, user_id)
-    if user is None:
-        return Err("User not found")
-    return Ok(user)
-
-# Usage
-match await get_user(123):
-    case Ok(user):
-        print(f"Found: {user.name}")
-    case Err(error):
-        print(f"Error: {error}")
-```
+Custom exception hierarchies and the Result pattern are in
+[references/error-handling.md](references/error-handling.md).
 
 ---
 
@@ -506,4 +478,4 @@ checklist[12]{pattern,best_practice}:
 
 ---
 
-**Version:** 1.3.0
+**Version:** 1.4.0
