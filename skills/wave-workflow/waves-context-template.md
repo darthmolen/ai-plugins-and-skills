@@ -16,8 +16,8 @@ Start a session (wave-workflow, "Starting the sessions"):
 
 - Terminal: `claude --agent ai-plugins-and-skills:wave-track --name wave-<N>-<track>`, then `track <track>`.
   The lead uses `wave-lead` and `--name wave-<N>-lead`.
-- VS Code extension: a new tab, `/ai-plugins-and-skills:wave-workflow track <track>` (or `lead`), then
-  rename the session as above.
+- VS Code extension: a new tab, `/ai-plugins-and-skills:wave-workflow track <track>` (or `lead`). The
+  session names itself `wave-<N>-<track>` when the prompt is sent.
 
 Each wave's document lives in planning/waves/wave-<n>/. Its plans are `wave-<n>_<track>_<date>` on
 the board.
@@ -39,6 +39,13 @@ Last updated: <YYYY-MM-DD>.
   starts a new branch for follow-up work; never reuse a merged branch.
 - A new project joins the solution file in the same pull request that creates it, so build
   validation runs its tests from the first merge.
+- Start your session with `session-start` (session-workflow) once your worktree exists, and run
+  `session-end` at every stop. A track uses `-Subject wave:wave-<N>/<track> -Mode commit`; the lead
+  uses `-Subject wave:wave-<N>/lead -Mode lead`.
+- Lock every port, local database or container before you run it, and release it when the run ends.
+  Name the lock from the resource's address, lowercased: `port-{n}`, `sql-{host}-{port}-{database}`,
+  `container-{name}` or `service-{name}`. Never put the wave or track in the name: another wave on
+  this machine must derive the same one.
 - Before deleting or moving a file, search the whole repository for links to it.
 - Stop at your pause point (Status by track, below), report, and wait. Don't start the next stage
   until the lead says so.
@@ -46,7 +53,8 @@ Last updated: <YYYY-MM-DD>.
 ## Where things stand
 
 <What is deployed, what is merged, and the facts a session needs that it cannot get from the files:
-environments, identities, ports, naming rules, shapes every track relies on.>
+environments, identities, naming rules, shapes every track relies on. List the ports, local
+databases and containers the tracks run, each with the lock name it takes, such as `port-5000`.>
 
 ## Rules learned the hard way
 
