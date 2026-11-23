@@ -246,7 +246,7 @@ the change. The typical case is a test that pins a stand-in the other track's re
 - Answers contract questions. A change to a frozen contract goes through the lead only.
 - Receives a SHA from each track and verifies it from a clean checkout: a fresh worktree, no `bin/`
   or `obj/`, warnings as errors, every test project. Then pushes the branch and opens the pull
-  request (`ado-pr` on Azure DevOps, `gh pr create` on GitHub).
+  request with `pr-create`.
 - Before pushing a follow-up to an open pull request, confirms it is still active. A merged branch is
   spent: squash merges leave nothing to add to, so follow-up work goes on a new branch.
 - Reports pull requests with full links, one per line, in the order to complete them.

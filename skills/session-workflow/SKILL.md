@@ -47,7 +47,7 @@ adds its own steps. `lead` stands apart.
 | `implement` | Everything `plan` does, then moves the plan to `in-progress/`, implements and verifies it, and moves the plan to `completed/` | Also the code, configuration and test changes and the plan's moves, unstaged and uncommitted. Never stages, unstages, commits or pushes, even where local guidance commits automatically |
 | `commit` | Everything `implement` does, then commits on the session's own branch | Also the commits on that branch. Never pushes, merges or opens a PR. A wave track runs in this mode |
 | `ship` | Everything `implement` does, then commits, pushes and opens a draft PR | Also the commit, which carries the completed plan with the code, the push and the draft PR. The PR URL is the last line |
-| `lead` | Verifies other sessions' commits in verification worktrees, pushes verified branches and opens their PRs (`ado-pr` on Azure DevOps, `gh pr create` on GitHub) | Verification worktrees, the coordination documents (wave and planning documents), pushes and PRs. Never writes production code, force-pushes or merges. A wave lead runs in this mode |
+| `lead` | Verifies other sessions' commits in verification worktrees, pushes verified branches and opens their PRs (`pr-create`) | Verification worktrees, the coordination documents (wave and planning documents), pushes and PRs. Never writes production code, force-pushes or merges. A wave lead runs in this mode |
 
 The `plan`, `implement` and `ship` rows are `ticket-start`'s, unchanged, because they are its
 contract. For a plan or wave subject, read "the ticket" as the subject. `ship` includes everything
@@ -72,7 +72,7 @@ Every session writes one when it starts, because another may start later. The fi
 | `session` | The ID: `{repo}_{key}_{yyyyMMddTHHmmssfff}_{4 hex}` |
 | `subject` | What the session works on, as `<kind>:<value>` |
 | `repo` | The repository name |
-| `ticket` | The work item number for a `ticket` subject, and `null` for any other |
+| `ticket` | The ticket's number for a `ticket` subject, and `null` for any other |
 | `worktree` | The worktree's full path |
 | `branch` | The branch |
 | `mode` | One of the five modes |
@@ -83,7 +83,7 @@ Every session writes one when it starts, because another may start later. The fi
 
 | Subject | For |
 |---|---|
-| `ticket:22744` | A work item. The value is its number |
+| `ticket:22744` | A ticket, a GitHub issue or an Azure DevOps work item. The value is its number, without `#` or `AB#` |
 | `plan:session-workflow-extraction_2026-11-19` | A plan, by its name |
 | `wave:wave-1/auth` | A wave track or lead, as `wave-<n>/<track>` |
 

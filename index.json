@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-23T02:00:25Z",
+  "generated": "2026-11-23T05:37:26Z",
   "skills": [
     {
       "name": "curriculum-classify",
@@ -303,7 +303,7 @@
       "folder": "ado-pr",
       "path": "skills/ado-pr",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when creating or updating an Azure DevOps pull request via the ado MCP tools \u2014 after plan-workflow's close, for a wave lead, as a draft with work items linked \u2014 including when the branch may already have an active PR, or a create call has already been rejected for a too-long description",
+      "description": "Deprecated name; invoke pr-create.",
       "category": "tools",
       "order": null
     },
@@ -331,6 +331,15 @@
       "path": "skills/mutation-harness",
       "plugin": "ai-plugins-and-skills",
       "description": "Use when seeding a mutant to check whether a test suite actually detects a wrong answer \u2014 the MUTATE step of test-filter-development. Seeds one fault, runs any test command, reports which tests died, and always reverts byte-for-byte, including on Ctrl-C or timeout. Inverts the usual exit code, because a mutant nothing kills is a failure. Framework-agnostic via --test-cmd, so it works for .NET, Node, Python or anything else that exits non-zero on failure.",
+      "category": "tools",
+      "order": null
+    },
+    {
+      "name": "pr-create",
+      "folder": "pr-create",
+      "path": "skills/pr-create",
+      "plugin": "ai-plugins-and-skills",
+      "description": "Use when opening, or updating the description of, a pull request on Azure DevOps or GitHub \u2014 after plan-workflow's close, from ticket-ship, for a wave lead, as a draft with work items or issues linked \u2014 including when the branch may already have an open PR, or a create call has already been rejected for a too-long description. Detects the host from the remote and follows its reference.",
       "category": "tools",
       "order": null
     },
@@ -497,11 +506,11 @@
       "order": null
     },
     {
-      "name": "ticket-end",
-      "folder": "ticket-end",
-      "path": "skills/ticket-end",
+      "name": "ticket-ship",
+      "folder": "ticket-ship",
+      "path": "skills/ticket-ship",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when an Azure DevOps ticket's work is implemented and verified and should become a draft PR, as in \"end ticket 22744\", \"ship 22744 now\", or when /ticket-start {id} ship reaches its commit. Finds the ticket's session and worktree, refuses a session still in plan mode, verifies, commits under the commit rules, completes the plan at the PR with post-PR checks as verify reminders, pushes without force, opens a draft PR through ado-pr with the work item linked, and ends the session through session-workflow at every stop. Prints the PR URL as the last line.",
+      "description": "Use when a ticket's work \u2014 a GitHub issue or an Azure DevOps work item \u2014 is implemented and verified and should become a draft PR, as in \"ship ticket 22744\", \"ship issue 412 now\", or when /ticket-start {id} ship reaches its commit. Finds the ticket's session and worktree, refuses a session still in plan mode, verifies, commits under the commit rules, completes the plan at the PR with post-PR checks as verify reminders, pushes without force, opens a draft PR through pr-create with the ticket linked, and ends the session through session-workflow at every stop. Prints the PR URL as the last line.",
       "category": "workflow-composers",
       "order": null
     },
@@ -510,7 +519,7 @@
       "folder": "ticket-start",
       "path": "skills/ticket-start",
       "plugin": "ai-plugins-and-skills",
-      "description": "Use when someone gives an Azure DevOps work item number and wants it planned, implemented or shipped as a draft PR, as in \"start ticket 22744\", \"plan work item 22531\", \"take 22744 through to a draft PR\". Reads the ticket, creates a fresh ticket branch in its own worktree, writes the plan (plan, the default), implements and verifies it uncommitted (implement), or ships it as a draft PR linked to the ticket by running ticket-end (ship). Each mode picks up where an earlier run stopped, and an earlier mode run again redoes its work. Starts and ends its session through session-workflow, which defers to the repository's and the caller's own guidance and coordinates parallel sessions through session files and resource locks; uses per-session isolated test environments where the repository provides them, and stops cleanly when the Azure login has expired.",
+      "description": "Use when someone gives a ticket \u2014 a GitHub issue or an Azure DevOps work item \u2014 and wants it planned, implemented or shipped as a draft PR, as in \"start ticket 22744\", \"plan GitHub issue 412\", \"plan work item AB#22531\", \"take 22744 through to a draft PR\". Reads the ticket, creates a fresh ticket branch in its own worktree, writes the plan (plan, the default), implements and verifies it uncommitted (implement), or ships it as a draft PR linked to the ticket by running ticket-ship (ship). Each mode picks up where an earlier run stopped, and an earlier mode run again redoes its work. Starts and ends its session through session-workflow, which defers to the repository's and the caller's own guidance and coordinates parallel sessions through session files and resource locks; uses per-session isolated test environments where the repository provides them, and stops cleanly when the az or gh login has expired.",
       "category": "workflow-composers",
       "order": null
     },

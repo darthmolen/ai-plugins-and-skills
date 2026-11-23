@@ -86,4 +86,4 @@ A person supervises every session, approves its steps, and resumes it after each
 - [`plan-tier`](../../skills/plan-tier/SKILL.md), `plan-send-review`, `plan-record-review`: tiering and review before a plan starts
 - [`system-spec`](../../skills/system-spec/SKILL.md): the spec reconciled when the wave closes
 - [`session-workflow`](../../skills/session-workflow/SKILL.md): each session's file, mode and locks
-- [`ado-pr`](../../skills/ado-pr/SKILL.md) on Azure DevOps, or `gh pr create` on GitHub: the pull requests the lead opens
+- [`pr-create`](../../skills/pr-create/SKILL.md): the pull requests the lead opens, on Azure DevOps or GitHub

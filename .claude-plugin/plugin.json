@@ -1,6 +1,6 @@
 {
   "name": "ai-plugins-and-skills",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Cross-platform AI coding assistant skills following the Agent Skills specification: adversarial plan and code review workflows, specs, plans, sessions and parallel waves, curated tools, and language quality standards.",
   "author": {
     "name": "Steven Molen",

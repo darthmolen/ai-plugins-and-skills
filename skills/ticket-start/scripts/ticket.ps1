@@ -1,33 +1,38 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    The mechanical half of the ticket-start skill: the Azure DevOps REST calls. The session and
-    lock files are session-workflow's scripts/session.ps1.
+    The mechanical half of the ticket-start skill: reading the repository, the ticket and its pull
+    requests from Azure DevOps or GitHub. The session and lock files are session-workflow's
+    scripts/session.ps1.
 
 .DESCRIPTION
     One verb per call. The result is JSON on stdout, and the exit code is what the skill branches
     on.
 
       0  done
-      1  unexpected error, or the Azure CLI is missing
+      1  unexpected error, or the Azure CLI or GitHub CLI is missing
       2  busy or conflicting; returned by session.ps1, never here
-      3  the Azure login has expired or no token could be had; the JSON carries loginCommand, and
-         tenant when the Azure CLI has one cached
-      4  refused input: not an ADO remote, an unsupported work item type, a ticket session in a
-         mode ticket-end refuses
+      3  the login has expired or no token could be had; the JSON carries loginCommand, and tenant
+         when the Azure CLI has one cached
+      4  refused input: a remote on neither host, a ticket the tracker or this repository cannot
+         read, an unsupported work item type, a ticket session in a mode ticket-ship refuses
 
-    Azure DevOps verbs. Run them inside the repository: the org, project and repository come from
-    origin, and the token from the existing Azure CLI login.
+    The host comes from origin: Azure DevOps (dev.azure.com) or GitHub (github.com). The tracker,
+    where the ticket lives, is GitHub Issues or Azure Boards, and need not be the host's own: a
+    GitHub repository may keep its work in Azure Boards. A ticket is given as a number, #123,
+    AB#123, or its URL. A bare number is read from -Tracker when given, else from the host's own
+    tracker. Run the verbs inside the repository; the tokens come from the existing az and gh
+    logins.
 
       repo
-      workitem      -Id
+      workitem      -Id [-Tracker ado|github] [-AdoOrg org]
       branch-name   -Id -Type -Title
       pr-find       -Branch
 
-    The draft PR is opened through the ado-pr skill; this script has no verb for it.
+    The draft PR is opened through the pr-create skill; this script has no verb for it.
 
-    The ticket's session, for ticket-end. It reads session-workflow's sessions output and reaches
-    no ADO.
+    The ticket's session, for ticket-ship. It reads session-workflow's sessions output and reaches
+    no server.
 
       session-find  -Id -Repo
 
@@ -37,7 +42,8 @@
 
 .NOTES
     PowerShell 7. Dot-sourcing this file defines its functions and runs nothing, which is how
-    test/Test-TicketScript.ps1 reaches them.
+    test/Test-TicketScript.ps1 reaches them. The host-specific calls are in ticket-ado.ps1 and
+    ticket-github.ps1 beside it.
 #>
 [CmdletBinding()]
 param(
@@ -47,17 +53,21 @@ param(
     [string] $Title,
     [string] $Branch,
     [string] $Repo,
+    [string] $Tracker,
+    [string] $AdoOrg,
     # Collects arguments no verb takes, so a call to a verb that does not exist
     # (pr-create -DescriptionFile ...) reaches the unknown-verb refusal instead of failing in
     # parameter binding.
     [Parameter(ValueFromRemainingArguments)] [string[]] $Unbound
 )
 
-$AdoResourceId = '499b84ac-1321-427f-aa17-267ca6975798'
-$AdoApiVersion = 'api-version=7.0'
-$AdoToken = $null
+. (Join-Path $PSScriptRoot 'ticket-ado.ps1')
+. (Join-Path $PSScriptRoot 'ticket-github.ps1')
 
-# The modes ticket-end ends a session in. Running /ticket-end is the consent to commit, push and
+$Trackers = @('ado', 'github')
+$Verbs = @('repo', 'workitem', 'branch-name', 'pr-find', 'session-find')
+
+# The modes ticket-ship ends a session in. Running /ticket-ship is the consent to commit, push and
 # open the draft PR, so an implement session is accepted; a plan session has nothing built.
 $EndableModes = @('implement', 'ship')
 
@@ -78,66 +88,15 @@ function Get-JsonValue($Object, [string] $Name) {
     if ($property) { $property.Value } else { $null }
 }
 
-# --- Azure DevOps ------------------------------------------------------------------------------
-
-function ConvertFrom-AdoRemote {
-    param([string] $Url)
-    $patterns = @(
-        '^https://(?:[^@/]+@)?dev\.azure\.com/(?<org>[^/]+)/(?<project>[^/]+)/_git/(?<repo>[^/?#]+?)/?$'
-        '^git@ssh\.dev\.azure\.com:v3/(?<org>[^/]+)/(?<project>[^/]+)/(?<repo>[^/]+?)/?$'
-    )
-    foreach ($pattern in $patterns) {
-        if ("$Url".Trim() -match $pattern) {
-            return [pscustomobject]@{ org = $Matches['org']; project = $Matches['project']; repo = $Matches['repo'] }
-        }
-    }
-    $null
-}
-
-function Get-AdoRemote {
-    $url = & git remote get-url origin 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not $url) {
-        Stop-Ticket 4 ([ordered]@{ error = 'no-origin'; message = 'This is not a git repository with an origin remote.' })
-    }
-    $parsed = ConvertFrom-AdoRemote "$url"
-    if (-not $parsed) {
-        Stop-Ticket 4 ([ordered]@{ error = 'not-ado-remote'; message = "origin is not an Azure DevOps remote: $url" })
-    }
-    $parsed
-}
-
-# An access token is a JWT, so anything else on stdout (an AADSTS message, a prompt to run
-# az login, nothing at all) means there is no usable token.
-function Test-TokenFailure {
-    param([int] $ExitCode, [string] $Stdout)
-    $ExitCode -ne 0 -or "$Stdout".Trim() -notmatch '^eyJ[\w-]*\.[\w-]*\.'
-}
-
-# ADO answers an expired login with 401, or with 203 and a sign-in page, or with HTML on a
-# success status. Each of them stops the run.
-function Get-ResponseKind {
-    param([int] $StatusCode, [string] $ContentType, [string] $Body)
-    if ($StatusCode -eq 401 -or $StatusCode -eq 203) { return 'login-expired' }
-    if ($StatusCode -eq 404) { return 'not-found' }
-    if ($StatusCode -ge 200 -and $StatusCode -lt 300) {
-        if ($ContentType -match 'text/html' -or "$Body".TrimStart().StartsWith('<')) { return 'login-expired' }
-        return 'ok'
-    }
-    'error'
-}
-
-function Get-CachedTenant {
-    # az account show still reads the cached tenant after the token has expired.
-    if (-not (Get-Command az -ErrorAction SilentlyContinue)) { return $null }
-    $tenant = & az account show --query tenantId -o tsv 2>$null
-    if ($LASTEXITCODE -ne 0) { return $null }
-    "$tenant".Trim()
-}
-
-function Stop-LoginExpired([string] $Reason) {
+function Stop-LoginExpired {
+    param([Parameter(Mandatory)][string] $Reason, [ValidateSet('az', 'gh')][string] $Tool = 'az')
     $payload = [ordered]@{
         error   = 'login-expired'
         message = "$Reason. Run the login command in your own terminal, then invoke the skill again; it resumes at the step that stopped."
+    }
+    if ($Tool -eq 'gh') {
+        $payload.loginCommand = 'gh auth login'
+        Stop-Ticket 3 $payload
     }
     # With no cached tenant there is no tenant field and the command is bare; the skill asks the
     # person for their tenant.
@@ -151,100 +110,107 @@ function Stop-LoginExpired([string] $Reason) {
     Stop-Ticket 3 $payload
 }
 
-function Get-AdoToken {
-    if ($script:AdoToken) { return $script:AdoToken }
-    if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
-        Stop-Ticket 1 ([ordered]@{ error = 'az-not-found'; message = 'The Azure CLI (az) is not on PATH. Install it and run az login.' })
-    }
-    $ErrorActionPreference = 'Continue'
-    $all = & az account get-access-token --resource $AdoResourceId --query accessToken -o tsv 2>&1
-    $code = $LASTEXITCODE
-    $stdout = ($all | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" }) -join "`n"
-    $stderr = ($all | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" }) -join ' '
-    if (Test-TokenFailure -ExitCode $code -Stdout $stdout) {
-        Stop-LoginExpired "The Azure CLI could not get an Azure DevOps token: $("$stderr $stdout".Trim())"
-    }
-    $script:AdoToken = $stdout.Trim()
-    $script:AdoToken
+# --- the host, from origin ---------------------------------------------------------------------
+
+function ConvertFrom-Remote {
+    param([string] $Url)
+    $ado = ConvertFrom-AdoRemote $Url
+    if ($ado) { return [pscustomobject]@{ host = 'ado'; url = $Url; org = $ado.org; project = $ado.project; repo = $ado.repo } }
+    $github = ConvertFrom-GitHubRemote $Url
+    if ($github) { return [pscustomobject]@{ host = 'github'; url = $Url; owner = $github.owner; repo = $github.repo } }
+    $null
 }
 
-function Invoke-AdoRequest {
-    param([string] $Method = 'GET', [Parameter(Mandatory)][string] $Uri, $Body)
-    $token = Get-AdoToken
-    $request = @{
-        Method             = $Method
-        Uri                = $Uri
-        Headers            = @{ Authorization = "Bearer $token" }
-        SkipHttpErrorCheck = $true
+function Get-Remote {
+    $url = & git remote get-url origin 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $url) {
+        Stop-Ticket 4 ([ordered]@{ error = 'no-origin'; message = 'This is not a git repository with an origin remote.' })
     }
-    if ($null -ne $Body) {
-        $request.Body = $Body | ConvertTo-Json -Depth 10
-        $request.ContentType = 'application/json'
+    $parsed = ConvertFrom-Remote "$url".Trim()
+    if (-not $parsed) {
+        Stop-Ticket 4 ([ordered]@{ error = 'unsupported-remote'; message = "origin is neither an Azure DevOps nor a GitHub remote: $url" })
     }
-    $response = Invoke-WebRequest @request
-    $status = [int] $response.StatusCode
-    $contentType = if ($response.Headers.ContainsKey('Content-Type')) { @($response.Headers['Content-Type']) -join ';' } else { '' }
-    $text = if ($response.Content -is [byte[]]) { [System.Text.Encoding]::UTF8.GetString($response.Content) } else { [string] $response.Content }
-    switch (Get-ResponseKind -StatusCode $status -ContentType $contentType -Body $text) {
-        'login-expired' { Stop-LoginExpired "Azure DevOps answered $status to $Method $Uri" }
-        'error' {
-            $excerpt = if ($text.Length -gt 300) { $text.Substring(0, 300) } else { $text }
-            Stop-Ticket 1 ([ordered]@{ error = 'ado-error'; status = $status; message = "Azure DevOps answered $status to $Method $Uri`: $excerpt" })
+    $parsed
+}
+
+function Get-Repository {
+    switch ((Get-Remote).host) {
+        'ado' { Get-AdoRepository }
+        'github' { Get-GitHubRepository }
+    }
+}
+
+# --- the ticket, and which tracker it lives in -------------------------------------------------
+
+$BadIdMessage = 'Give the ticket as a number, #123, AB#123, or its URL'
+
+# What the caller typed, taken apart. tracker is null for a bare number, which the host decides.
+function ConvertFrom-TicketRef {
+    param([string] $Ref)
+    $text = "$Ref".Trim()
+    $parsed = switch -Regex ($text) {
+        '^(?<id>\d+)$' { [pscustomobject]@{ id = $Matches['id']; tracker = $null; org = $null; owner = $null; repo = $null }; break }
+        '^#(?<id>\d+)$' { [pscustomobject]@{ id = $Matches['id']; tracker = 'github'; org = $null; owner = $null; repo = $null }; break }
+        '^AB#(?<id>\d+)$' { [pscustomobject]@{ id = $Matches['id']; tracker = 'ado'; org = $null; owner = $null; repo = $null }; break }
+        '^https://(?:[^@/]+@)?dev\.azure\.com/(?<org>[^/]+)/[^/]+/_workitems/edit/(?<id>\d+)/?(?:[?#].*)?$' {
+            [pscustomobject]@{ id = $Matches['id']; tracker = 'ado'; org = $Matches['org']; owner = $null; repo = $null }; break
+        }
+        '^https://github\.com/(?<owner>[^/]+)/(?<repo>[^/]+)/issues/(?<id>\d+)/?(?:[?#].*)?$' {
+            [pscustomobject]@{ id = $Matches['id']; tracker = 'github'; org = $null; owner = $Matches['owner']; repo = $Matches['repo'] }; break
         }
     }
-    $json = $null
-    if ($text) { try { $json = $text | ConvertFrom-Json } catch { $json = $null } }
-    [pscustomobject]@{ Status = $status; Json = $json }
+    if (-not $parsed) { Stop-Ticket 4 ([ordered]@{ error = 'bad-id'; message = "$BadIdMessage, not '$Ref'." }) }
+    $parsed
 }
 
-# The server's default branch is both the base and the PR target. A local origin/HEAD can be stale.
-function Get-AdoRepository {
-    $remote = Get-AdoRemote
-    $uri = "https://dev.azure.com/$($remote.org)/$($remote.project)/_apis/git/repositories/$($remote.repo)?$AdoApiVersion"
-    $response = Invoke-AdoRequest -Uri $uri
-    if ($response.Status -eq 404) {
-        Stop-Ticket 4 ([ordered]@{ error = 'not-found'; message = "Azure DevOps has no repository $($remote.project)/$($remote.repo) that this login can see." })
+# Precedence: -Tracker (from local guidance), then the form the ticket was given in, then the
+# host's own tracker.
+function Resolve-Tracker {
+    param([Parameter(Mandatory)] $Ref, [string] $Explicit, [Parameter(Mandatory)] $Remote)
+    if ($Explicit -and $Trackers -cnotcontains $Explicit) {
+        Stop-Ticket 4 ([ordered]@{ error = 'usage'; message = "-Tracker is $($Trackers -join ' or '), not '$Explicit'." })
     }
-    $default = "$(Get-JsonValue $response.Json 'defaultBranch')" -replace '^refs/heads/', ''
-    if (-not $default) {
-        Stop-Ticket 4 ([ordered]@{ error = 'no-default-branch'; message = "$($remote.repo) has no default branch on the server." })
+    if ($Explicit -and $Ref.tracker -and $Explicit -ne $Ref.tracker) {
+        Stop-Ticket 4 ([ordered]@{ error = 'tracker-conflict'; message = "The ticket was given in $($Ref.tracker)'s form, but -Tracker says $Explicit." })
     }
-    [pscustomobject][ordered]@{ org = $remote.org; project = $remote.project; repo = $remote.repo; defaultBranch = $default }
+    $resolved = if ($Explicit) { $Explicit } elseif ($Ref.tracker) { $Ref.tracker } else { $Remote.host }
+    if ($resolved -eq 'github') {
+        if ($Remote.host -ne 'github') {
+            Stop-Ticket 4 ([ordered]@{ error = 'unsupported-tracker'; message = 'GitHub issues are read only in a GitHub repository; origin is on Azure DevOps.' })
+        }
+        if ($Ref.owner -and "$($Ref.owner)/$($Ref.repo)" -ne "$($Remote.owner)/$($Remote.repo)") {
+            Stop-Ticket 4 ([ordered]@{ error = 'other-repository'; message = "Issue $($Ref.id) is in $($Ref.owner)/$($Ref.repo), not in this repository, $($Remote.owner)/$($Remote.repo)." })
+        }
+    }
+    $resolved
+}
+
+# The Azure Boards organization: the ticket's URL, then -AdoOrg, then origin when it is on ADO.
+# On an ADO repository the PR links a work item by number within origin's organization, so a work
+# item in another organization would link the wrong one; it is refused.
+function Resolve-AdoOrg {
+    param([Parameter(Mandatory)] $Ref, [string] $AdoOrg, [Parameter(Mandatory)] $Remote)
+    $org = if ($Ref.org) { $Ref.org } elseif ($AdoOrg) { $AdoOrg } elseif ($Remote.host -eq 'ado') { $Remote.org } else { $null }
+    if ($org -and $Remote.host -eq 'ado' -and $org -ne $Remote.org) {
+        Stop-Ticket 4 ([ordered]@{
+                error   = 'other-organization'
+                message = "Work item $($Ref.id) is in the $org organization, and this repository is in $($Remote.org). Its PR could link only a work item in $($Remote.org); start the ticket from a repository in $org."
+            })
+    }
+    if ($org) { return $org }
+    Stop-Ticket 4 ([ordered]@{
+            error   = 'no-ado-org'
+            message = 'This repository is on GitHub and the ticket is in Azure Boards, so the organization cannot come from origin. Pass -AdoOrg, from local guidance or the caller, or give the work item URL.'
+        })
 }
 
 function Get-WorkItem {
-    param([Parameter(Mandatory)][string] $Id)
-    if ($Id -notmatch '^\d+$') { Stop-Ticket 4 ([ordered]@{ error = 'bad-id'; message = "A work item ID is a number, not '$Id'." }) }
-    $remote = Get-AdoRemote
-    # Work item IDs are unique across the org, so the request needs no project.
-    $uri = "https://dev.azure.com/$($remote.org)/_apis/wit/workitems/$($Id)?`$expand=relations&$AdoApiVersion"
-    $response = Invoke-AdoRequest -Uri $uri
-    if ($response.Status -eq 404) {
-        Stop-Ticket 4 ([ordered]@{ error = 'not-found'; message = "Work item $Id does not exist, or this login cannot see it." })
-    }
-    $fields = Get-JsonValue $response.Json 'fields'
-    $teamProject = "$(Get-JsonValue $fields 'System.TeamProject')"
-    $relations = @(foreach ($relation in @(Get-JsonValue $response.Json 'relations')) {
-            if ($null -eq $relation) { continue }
-            [pscustomobject][ordered]@{
-                rel  = "$(Get-JsonValue $relation 'rel')"
-                name = "$(Get-JsonValue (Get-JsonValue $relation 'attributes') 'name')"
-                url  = "$(Get-JsonValue $relation 'url')"
-            }
-        })
-    [pscustomobject][ordered]@{
-        id                 = [int] $Id
-        type               = "$(Get-JsonValue $fields 'System.WorkItemType')"
-        title              = "$(Get-JsonValue $fields 'System.Title')"
-        state              = "$(Get-JsonValue $fields 'System.State')"
-        teamProject        = $teamProject
-        url                = "https://dev.azure.com/$($remote.org)/$([uri]::EscapeDataString($teamProject))/_workitems/edit/$Id"
-        iterationPath      = "$(Get-JsonValue $fields 'System.IterationPath')"
-        assignedTo         = "$(Get-JsonValue (Get-JsonValue $fields 'System.AssignedTo') 'displayName')"
-        description        = "$(Get-JsonValue $fields 'System.Description')"
-        acceptanceCriteria = "$(Get-JsonValue $fields 'Microsoft.VSTS.Common.AcceptanceCriteria')"
-        reproSteps         = "$(Get-JsonValue $fields 'Microsoft.VSTS.TCM.ReproSteps')"
-        relations          = $relations
+    param([Parameter(Mandatory)][string] $Id, [string] $Tracker, [string] $AdoOrg)
+    $ref = ConvertFrom-TicketRef $Id
+    $remote = Get-Remote
+    switch (Resolve-Tracker -Ref $ref -Explicit $Tracker -Remote $remote) {
+        'ado' { Get-AdoWorkItem -Id $ref.id -Org (Resolve-AdoOrg -Ref $ref -AdoOrg $AdoOrg -Remote $remote) }
+        'github' { Get-GitHubIssue -Id $ref.id -Owner $remote.owner -Repo $remote.repo }
     }
 }
 
@@ -253,6 +219,7 @@ function Get-BranchFallback {
     param([Parameter(Mandatory)][string] $Id, [Parameter(Mandatory)][string] $Type, [string] $Title)
     $prefix = switch ($Type) {
         'User Story' { 'feature' }
+        'Feature' { 'feature' }
         'Bug' { 'bug' }
         default { $null }
     }
@@ -265,28 +232,16 @@ function Get-BranchFallback {
     if ($slug) { "$prefix/$($Id)_$slug" } else { "$prefix/$Id" }
 }
 
-function Get-PullRequestUrl($RepoInfo, $PullRequestId) {
-    "https://dev.azure.com/$($RepoInfo.org)/$($RepoInfo.project)/_git/$($RepoInfo.repo)/pullrequest/$PullRequestId"
+function Find-PullRequest {
+    param([Parameter(Mandatory)][string] $Branch)
+    $info = Get-Repository
+    switch ($info.host) {
+        'ado' { @(Find-ActivePullRequest -RepoInfo $info -Branch $Branch) }
+        'github' { @(Find-GitHubPullRequest -RepoInfo $info -Branch $Branch) }
+    }
 }
 
-function Find-ActivePullRequest {
-    param([Parameter(Mandatory)] $RepoInfo, [Parameter(Mandatory)][string] $Branch)
-    $base = "https://dev.azure.com/$($RepoInfo.org)/$($RepoInfo.project)/_apis/git/repositories/$($RepoInfo.repo)/pullrequests"
-    $uri = "$($base)?searchCriteria.sourceRefName=refs/heads/$Branch&searchCriteria.status=active&$AdoApiVersion"
-    $response = Invoke-AdoRequest -Uri $uri
-    @(foreach ($pr in @(Get-JsonValue $response.Json 'value')) {
-            if ($null -eq $pr) { continue }
-            $prId = Get-JsonValue $pr 'pullRequestId'
-            [pscustomobject][ordered]@{
-                id      = $prId
-                title   = "$(Get-JsonValue $pr 'title')"
-                isDraft = [bool] (Get-JsonValue $pr 'isDraft')
-                url     = Get-PullRequestUrl $RepoInfo $prId
-            }
-        })
-}
-
-# --- the ticket's session, for ticket-end ------------------------------------------------------
+# --- the ticket's session, for ticket-ship -----------------------------------------------------
 
 # session-workflow sits beside ticket-start, in the plugin and in ~/.claude/skills alike.
 function Get-SessionScript {
@@ -307,12 +262,13 @@ function Get-SessionViews {
     @(Get-JsonValue ($out -join "`n" | ConvertFrom-Json) 'sessions')
 }
 
-# The ticket's session in this repository, or none. A session in a mode ticket-end does not end is
-# refused with exit 4, and the recorded mode is left as it is.
+# The ticket's session in this repository, or none. A session in a mode ticket-ship does not end is
+# refused with exit 4, and the recorded mode is left as it is. The subject is ticket:<number>
+# whichever tracker the ticket is in.
 function Find-TicketSession {
     param([Parameter(Mandatory)][string] $Id, [Parameter(Mandatory)][string] $Repo, $Sessions)
-    if ($Id -notmatch '^\d+$') { Stop-Ticket 4 ([ordered]@{ error = 'bad-id'; message = "A work item ID is a number, not '$Id'." }) }
-    $found = @($Sessions | Where-Object { $null -ne $_ -and "$(Get-JsonValue $_ 'repo')" -eq $Repo -and "$(Get-JsonValue $_ 'subject')" -eq "ticket:$Id" })
+    $number = (ConvertFrom-TicketRef $Id).id
+    $found = @($Sessions | Where-Object { $null -ne $_ -and "$(Get-JsonValue $_ 'repo')" -eq $Repo -and "$(Get-JsonValue $_ 'subject')" -eq "ticket:$number" })
     if ($found.Count -eq 0) { return [ordered]@{ session = $null } }
     $session = $found[0]
     $mode = "$(Get-JsonValue $session 'mode')"
@@ -321,7 +277,7 @@ function Find-TicketSession {
                 error   = 'mode-refused'
                 session = "$(Get-JsonValue $session 'session')"
                 mode    = $mode
-                message = "Ticket $Id's session is in $mode mode. ticket-end ends a session in $($EndableModes -join ' or '); a plan session has nothing built to ship."
+                message = "Ticket $number's session is in $mode mode. ticket-ship ends a session in $($EndableModes -join ' or '); a plan session has nothing built to ship."
             })
     }
     [ordered]@{ session = $session }
@@ -338,30 +294,28 @@ if ($MyInvocation.InvocationName -ne '.') {
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
     try {
-        if ($Unbound -and $Verb -in @('repo', 'workitem', 'branch-name', 'pr-find', 'session-find')) {
+        if ($Unbound -and $Verb -in $Verbs) {
             Stop-Ticket 4 ([ordered]@{ error = 'usage'; message = "$Verb does not take: $($Unbound -join ' ')." })
         }
         $result = switch ($Verb) {
-            'repo' { Get-AdoRepository }
-            'workitem' { Get-WorkItem -Id (Get-Required 'Id' $Id) }
+            'repo' { Get-Repository }
+            'workitem' { Get-WorkItem -Id (Get-Required 'Id' $Id) -Tracker $Tracker -AdoOrg $AdoOrg }
             'branch-name' {
-                $name = Get-BranchFallback -Id (Get-Required 'Id' $Id) -Type (Get-Required 'Type' $Type) -Title $Title
+                $number = (ConvertFrom-TicketRef (Get-Required 'Id' $Id)).id
+                $name = Get-BranchFallback -Id $number -Type (Get-Required 'Type' $Type) -Title $Title
                 if (-not $name) {
                     Stop-Ticket 4 ([ordered]@{ error = 'unsupported-type'; message = "A $Type has no fallback branch name. Ask the caller for one." })
                 }
                 [ordered]@{ branch = $name }
             }
-            'pr-find' {
-                $info = Get-AdoRepository
-                [ordered]@{ pullRequests = @(Find-ActivePullRequest -RepoInfo $info -Branch (Get-Required 'Branch' $Branch)) }
-            }
+            'pr-find' { [ordered]@{ pullRequests = @(Find-PullRequest -Branch (Get-Required 'Branch' $Branch)) } }
             'session-find' {
                 Find-TicketSession -Id (Get-Required 'Id' $Id) -Repo (Get-Required 'Repo' $Repo) -Sessions (Get-SessionViews)
             }
             default {
                 Stop-Ticket 4 ([ordered]@{
                         error   = 'usage'
-                        message = "Unknown verb '$Verb'. Verbs: repo, workitem, branch-name, pr-find, session-find. The draft PR is the ado-pr skill's. The session and lock verbs are session-workflow's scripts/session.ps1."
+                        message = "Unknown verb '$Verb'. Verbs: $($Verbs -join ', '). The draft PR is the pr-create skill's. The session and lock verbs are session-workflow's scripts/session.ps1."
                     })
             }
         }

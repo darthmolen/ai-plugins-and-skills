@@ -56,7 +56,7 @@ Hooks are Claude Code only. `hooks/hooks.json` registers one `UserPromptSubmit` 
 The planning and execution skills are layered. Each layer can be used without the ones above it.
 
 ```text
-drivers ────────── ticket-start / ticket-end, a plan you run yourself, a wave track
+drivers ────────── ticket-start / ticket-ship, a plan you run yourself, a wave track
        │ supply the session's subject and mode
 plan-workflow ──── the board: what the work is, its document, its status
        │
@@ -65,8 +65,8 @@ session-workflow ─ one session on one machine: worktree, session file, mode, l
        │
 wave-workflow ──── many sessions under a lead; each lead and track is one session
 
-ending a plan ──── plan-workflow close, then the pull request (ado-pr on Azure DevOps,
-                   gh pr create on GitHub); ticket-end adds the work-item link
+ending a plan ──── plan-workflow close, then the pull request (pr-create, Azure DevOps
+                   or GitHub); ticket-ship adds the ticket's link
 ```
 
 Specs sit beside this stack: `system-spec` owns the evergreen system spec for an area, a plan's feature-spec merges into it at the pull request, and `system-spec-derive` and `system-spec-backfill` write one for an area that has none. `plan-tier` sets how much plan and review a piece of work needs before `plan-workflow` takes it. [VOCABULARY.md](VOCABULARY.md) defines each term, and [workflows/](workflows/README.md) walks through each workflow.
@@ -178,6 +178,8 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── mutation-harness/
     │   └── SKILL.md
+    ├── pr-create/
+    │   └── SKILL.md
     ├── psql-query/
     │   └── SKILL.md
     ├── python-project/
@@ -214,7 +216,7 @@ ai-plugins-and-skills/
     │   └── SKILL.md
     ├── test-filter-development/
     │   └── SKILL.md
-    ├── ticket-end/
+    ├── ticket-ship/
     │   └── SKILL.md
     ├── ticket-start/
     │   └── SKILL.md

@@ -1,22 +1,25 @@
 ---
-name: ticket-end
-description: Use when an Azure DevOps ticket's work is implemented and verified and should become a draft PR, as in "end ticket 22744", "ship 22744 now", or when /ticket-start {id} ship reaches its commit. Finds the ticket's session and worktree, refuses a session still in plan mode, verifies, commits under the commit rules, completes the plan at the PR with post-PR checks as verify reminders, pushes without force, opens a draft PR through ado-pr with the work item linked, and ends the session through session-workflow at every stop. Prints the PR URL as the last line.
+name: ticket-ship
+description: Use when a ticket's work — a GitHub issue or an Azure DevOps work item — is implemented and verified and should become a draft PR, as in "ship ticket 22744", "ship issue 412 now", or when /ticket-start {id} ship reaches its commit. Finds the ticket's session and worktree, refuses a session still in plan mode, verifies, commits under the commit rules, completes the plan at the PR with post-PR checks as verify reminders, pushes without force, opens a draft PR through pr-create with the ticket linked, and ends the session through session-workflow at every stop. Prints the PR URL as the last line.
 metadata:
   category: workflow-composers
 ---
 
-# Ticket End
+# Ticket Ship
 
-Closes a ticket's session with a draft PR: commit, push, the draft PR linked to the work item, and the
-session's end. `ticket-start` begins a ticket; this skill ends it. `/ticket-start {id} ship` runs its
-own steps 1 to 6 and then runs this skill, so the commit rules live here and only here.
+Ships a ticket's work as a draft PR: commit, push, the draft PR linked to the ticket, and the
+session's end. `ticket-start` begins a ticket; this skill ships it. The ticket is a GitHub issue or
+an Azure DevOps work item, given in any form `ticket-start`'s *Where the ticket lives* accepts.
+`/ticket-start {id} ship` runs its own steps 1 to 6 and then runs this skill, so the commit rules
+live here and only here.
 
-Invoke it as `/ticket-end {id}`. It also ends a ticket whose session started in place or by hand.
+Invoke it as `/ticket-ship {ticket}`. It also ships a ticket whose session started in place or by
+hand. Below, `{id}` is the ticket's number without `#` or `AB#`.
 
 ## Contract
 
-- **Input.** `/ticket-end {id}`.
-- **Mode.** A session found for the ticket must be in `implement` or `ship`. Running `/ticket-end` is
+- **Input.** `/ticket-ship {ticket}`.
+- **Mode.** A session found for the ticket must be in `implement` or `ship`. Running `/ticket-ship` is
   the person's consent to commit, push and open the draft PR, which an `implement` session never
   does on its own. A session in `plan` is refused with exit 4: nothing has been built. The recorded
   mode is left as it is (see *The recorded mode*).
@@ -28,8 +31,8 @@ Invoke it as `/ticket-end {id}`. It also ends a ticket whose session started in 
 | 0 | Done |
 | 1 | An unexpected error |
 | 2 | Busy or conflicting |
-| 3 | The Azure login has expired |
-| 4 | Refused input: a session in `plan` mode, a PR description over 4000 characters |
+| 3 | The `az` or `gh` login has expired |
+| 4 | Refused input: a ticket this repository cannot read or link (`workitem`'s `error`), a session in `plan` mode, a PR description over the host's limit |
 
 ## The recorded mode
 
@@ -46,8 +49,13 @@ Run the script verbs as under *Script reference*. Call `session-step` as each st
 is a session.
 
 1. **Find the session and the worktree.**
-   - Run `repo`. Exit 3: follow *Expired Azure login*. Exit 4: the remote is not ADO.
-   - Run `session-find -Id {id} -Repo {repo}`. It returns the ticket's session (by its subject
+   - Run `repo`. Exit 3: follow *Expired login*. Exit 4: `origin` is on neither host.
+   - Run `workitem -Id {ticket}`, with `-Tracker` and `-AdoOrg` as `ticket-start`'s *Where the
+     ticket lives* says, before anything else touches a session. It applies every tracker check: an
+     issue in another repository, a GitHub issue on an Azure DevOps repository and a work item in
+     another organization all stop here with exit 4. Keep its `tracker`, `id` and `url` for the
+     draft PR.
+   - Run `session-find -Id {ticket} -Repo {repo}`. It returns the ticket's session (by its subject
      `ticket:{id}`, or the `ticket` field of an older file) or `null`. Exit 4 with `mode-refused`: report
      that the ticket's session is in `plan` mode and stop. Do not end that session; it belongs to
      whoever started it.
@@ -58,7 +66,9 @@ is a session.
      `ship`, so the rest of the run holds locks and ends like any other session.
 2. **Verify.** Run the verification the plan and local guidance name, with
    `superpowers:verification-before-completion`. Report build, standards check and tests separately,
-   with actual outcomes. If verification fails, stop: no commit, no push. When `ship` delegated here
+   with actual outcomes. Include `pr-create`'s dependency audit (its step 4), so an advisory is
+   fixed before the commit rather than found after the push. If verification fails, stop: no
+   commit, no push. When `ship` delegated here
    straight after its own step 6, that verification stands unless a file has changed since.
    - **When the caller has staged a set that differs from the working tree** (`git diff --quiet`
      exits non-zero), verify what will be committed, not the working tree. Run
@@ -91,10 +101,12 @@ is a session.
    commit kept locally.
 5. **Draft PR.**
    - Write the description to a file following `references/pr-description.md` and count it.
-   - Open the PR with `ado-pr`: source the ticket branch, target the server's `defaultBranch` from
-     `repo` unless local guidance names another, `isDraft: true`, and `workItems: "{id}"`. `ado-pr`
-     returns an existing active PR from the branch instead of opening a second.
-   - Never merge, set auto-complete or add reviewers. Never edit the work item.
+   - Open the PR with `pr-create`: source the ticket branch, target the server's `defaultBranch`
+     from `repo` unless local guidance names another, as a draft, with the ticket linked. Tell
+     `pr-create` the `tracker` that step 1's `workitem` returned: on Azure DevOps it links work item `{id}`, and on
+     GitHub it writes `Refs #{id}` for an issue or `AB#{id}` for an Azure Boards work item.
+     `pr-create` returns an existing open PR from the branch instead of opening a second.
+   - Never merge, set auto-complete or add reviewers. Never edit the ticket.
 6. **Finish.** Run `session-workflow end`: it removes the session's isolated environment, then runs
    `session-end`, which releases every lock the session holds and removes its file. The worktree
    stays for review; removing it after the PR merges is the caller's decision. End with the PR URL,
@@ -111,18 +123,18 @@ stop, and each step starts from what it finds, so a rerun picks up where the fai
 | Verify | Stop. No commit, no push. The session ends | Verifies again |
 | Commit | Stop. The work stays uncommitted in the worktree. The session ends | Commits |
 | Push (refused, or exit 3) | Stop. The commit stays local. The session ends | Pushes, never with force |
-| Draft PR (exit 3 or 4) | Stop. The branch stays pushed. The session ends | `ado-pr` returns the existing PR or opens one |
+| Draft PR (exit 3 or 4) | Stop. The branch stays pushed. The session ends | `pr-create` returns the existing PR or opens one |
 | `session-workflow end` | Report it. `sessions` shows the leftover, which a person breaks with agreement | Ends the session |
 
-## Expired Azure login
+## Expired login
 
-A script verb that reaches ADO exits 3 when the Azure login has expired. Its JSON carries
-`loginCommand`, and `tenant` when the Azure CLI still has one cached. On exit 3:
+A script verb that reaches a server exits 3 when its `az` or `gh` login is missing or expired. Its
+JSON carries `loginCommand`, and for `az` a `tenant` when the Azure CLI still has one cached. On
+exit 3:
 
-- Stop immediately. Do not retry and do not run `az login`, which is interactive.
-- If the JSON has `tenant`, give the person `loginCommand` as it is.
-- If it has no `tenant`, ask the person for their tenant, then give them
-  `az login --tenant {their answer}`.
+- Stop immediately. Do not retry and do not run the login command yourself; it is interactive.
+- Give the person `loginCommand` as it is. For `az` without a `tenant`, ask the person for their
+  tenant, then give them `az login --tenant {their answer}`.
 - Name the step that stopped and what is already done. The next invocation resumes there.
 - Run `session-workflow end`, as at any other stop.
 
@@ -141,17 +153,18 @@ $tk = if ($env:CLAUDE_PLUGIN_ROOT) {
 
 | Verb | Does |
 |---|---|
-| `repo` | Reads `origin` and the server's `defaultBranch` |
+| `repo` | Reads `origin`: the `host`, the repository and the server's `defaultBranch` |
+| `workitem -Id [-Tracker] [-AdoOrg]` | Reads and checks the ticket; its `tracker`, `id` and `url` |
 | `session-find -Id -Repo` | The ticket's session in this repository, or `null`. Exit 4 (`mode-refused`) for a session in a mode other than `implement` or `ship` |
-| `pr-find -Branch` | Active PRs from the branch |
+| `pr-find -Branch` | Open PRs from the branch |
 
-The draft PR is `ado-pr`'s; `ticket.ps1` has no verb for it.
+The draft PR is `pr-create`'s; `ticket.ps1` has no verb for it.
 
 ## Do not
 
 - Force-push, merge, set auto-complete or add reviewers.
-- Edit the work item.
-- Run `az login`.
+- Edit the ticket: no field, state, label or comment, on either tracker.
+- Run `az login` or `gh auth login`.
 - Stash, discard or unstage anyone's work.
 - Change a live session's recorded mode, or end a session this skill refused.
 - Hold a session open after a failure.

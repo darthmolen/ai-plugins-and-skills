@@ -1,19 +1,43 @@
 ---
 name: ticket-start
-description: Use when someone gives an Azure DevOps work item number and wants it planned, implemented or shipped as a draft PR, as in "start ticket 22744", "plan work item 22531", "take 22744 through to a draft PR". Reads the ticket, creates a fresh ticket branch in its own worktree, writes the plan (plan, the default), implements and verifies it uncommitted (implement), or ships it as a draft PR linked to the ticket by running ticket-end (ship). Each mode picks up where an earlier run stopped, and an earlier mode run again redoes its work. Starts and ends its session through session-workflow, which defers to the repository's and the caller's own guidance and coordinates parallel sessions through session files and resource locks; uses per-session isolated test environments where the repository provides them, and stops cleanly when the Azure login has expired.
+description: Use when someone gives a ticket — a GitHub issue or an Azure DevOps work item — and wants it planned, implemented or shipped as a draft PR, as in "start ticket 22744", "plan GitHub issue 412", "plan work item AB#22531", "take 22744 through to a draft PR". Reads the ticket, creates a fresh ticket branch in its own worktree, writes the plan (plan, the default), implements and verifies it uncommitted (implement), or ships it as a draft PR linked to the ticket by running ticket-ship (ship). Each mode picks up where an earlier run stopped, and an earlier mode run again redoes its work. Starts and ends its session through session-workflow, which defers to the repository's and the caller's own guidance and coordinates parallel sessions through session files and resource locks; uses per-session isolated test environments where the repository provides them, and stops cleanly when the az or gh login has expired.
 metadata:
   category: workflow-composers
 ---
 
 # Ticket Start
 
-Takes an Azure DevOps (ADO) work item from ticket to plan, to uncommitted implementation, or to a
-draft PR, in a worktree of its own. It composes existing skills and holds only what they lack:
-ticket lookup and the stop when the Azure login has expired. The commit, push and draft PR are
-`ticket-end`'s, which `ship` runs. Its session,
-local guidance, locks and modes are `session-workflow`'s.
+Takes a ticket from plan, to uncommitted implementation, or to a draft PR, in a worktree of its
+own. A ticket is a GitHub issue or an Azure DevOps (ADO) work item of any type. The skill composes
+existing skills and holds only what they lack: reading the ticket, and the stop when the login has
+expired. The commit, push and draft PR are `ticket-ship`'s, which `ship` runs. Its session, local
+guidance, locks and modes are `session-workflow`'s.
 
-Invoke it as `/ticket-start {id} [plan | implement | ship] [--in-place]`. `plan` is the default.
+Invoke it as `/ticket-start {ticket} [plan | implement | ship] [--in-place]`. `plan` is the default.
+
+## Where the ticket lives
+
+The repository's host comes from `origin`; where its tickets live (the tracker) can differ. A
+GitHub repository may keep its work in Azure Boards.
+
+| Given as | Tracker |
+|---|---|
+| `#412`, or `https://github.com/{owner}/{repo}/issues/412` | GitHub Issues, in this repository |
+| `AB#22744`, or `https://dev.azure.com/{org}/{project}/_workitems/edit/22744` | Azure Boards |
+| A bare number, `22744` | The tracker local guidance names; otherwise the host's own |
+
+Pass `-Tracker ado` or `-Tracker github` to `workitem` when local guidance names the tracker. A
+GitHub repository whose tickets are in Azure Boards also needs the organization: from the
+work item URL, or from local guidance as `-AdoOrg`. If neither says, ask. An Azure DevOps
+repository with its tickets in GitHub Issues is not supported: `workitem` refuses it with exit 4,
+as it refuses an Azure Boards work item in another organization than the repository's.
+
+A repository keeps its tickets in one tracker. The session subject is `ticket:{id}`, the number
+alone, so in a GitHub repository that used both trackers at once, issue `#12` and work item
+`AB#12` would share one session. That is not supported.
+
+The details of each tracker, its fields and its login, are in `references/ado.md` and
+`references/github.md`. In the steps below, `{id}` is the ticket's number without `#` or `AB#`.
 
 ## Modes and consent
 
@@ -37,7 +61,7 @@ is no record of it, because `session-end` removes the file.
 | planned | The plan is in the queue root, and nothing else in the worktree has changed |
 | implementing | Anything between planned and implemented: the plan in `in-progress/`, code changes beside it, or a plan returned unfinished with a `## Status` section |
 | implemented | The plan is in `planning/completed/` with its `## Status` section, and no changed file in the worktree is newer than it |
-| shipped | The completed plan is in a commit ahead of the base, the worktree is clean, the branch is pushed with nothing unpushed, and an active PR comes from it |
+| shipped | The completed plan is in a commit ahead of the base, the worktree is clean, the branch is pushed with nothing unpushed, and an open PR comes from it |
 
 **Then compare it with the mode's stage:**
 
@@ -73,26 +97,29 @@ Follow `session-workflow`'s *Precedence and local guidance*, and record what app
 ## Steps
 
 Run the script verbs from the repository, with the paths resolved as under *Script reference*: the
-ADO verbs run `ticket.ps1`, and the session and lock verbs run `session.ps1`. The session ID comes
+ticket verbs run `ticket.ps1`, and the session and lock verbs run `session.ps1`. The session ID comes
 from `session-start`; call `session-step` as each step begins.
 
 1. **Preflight** (every mode).
-   - Run `repo`. Exit 3 means the Azure login has expired: follow *Expired Azure login* before
-     anything else. Exit 4 means the remote is not ADO.
+   - Run `repo`. It returns the `host` (`ado` or `github`) and the server's `defaultBranch`. Exit 3
+     means the login has expired: follow *Expired login* before anything else. Exit 4 means
+     `origin` is on neither host.
    - Run `session-workflow start` with `-Subject ticket:{id}` and the mode. It runs `sessions` and
      `session-start`, and discovers local guidance. Exit 2 from `session-start` means a session
      file for this repository and ticket exists; follow `session-workflow` on it. An unattended run
      stops.
    - With `--in-place` only, check the working tree. If it has changes and the current branch is not
      this ticket's, stop and ask. By default the caller's checkout is never touched.
-2. **Read the ticket** (every mode). Run `workitem -Id {id}`. Summarize the type, title, state,
-   description, acceptance criteria and repro steps. Flag missing acceptance criteria rather than
-   inventing them. A description is HTML; read it as text. Never edit the work item.
+2. **Read the ticket** (every mode). Run `workitem -Id {ticket}`, as given, adding `-Tracker` and
+   `-AdoOrg` as *Where the ticket lives* says. The result carries `tracker` and the same fields
+   for both. Summarize the type, title, state, description, acceptance criteria and repro steps,
+   reading them as the tracker's reference describes. Flag missing acceptance criteria rather than
+   inventing them. Never edit the ticket.
 3. **Branch and worktree** (every mode).
    - Name the branch from, in order: local guidance; the repository's observed convention, taken
      from recent remote branch names and PR titles; then `branch-name`, which gives
-     `feature/{id}_{slug}` for a User Story and `bug/{id}_{slug}` for a Bug. For any other type
-     (exit 4), ask.
+     `feature/{id}_{slug}` for a User Story or Feature and `bug/{id}_{slug}` for a Bug. For any other
+     type, or an issue with no type (exit 4), ask.
    - Run `git fetch origin`, then create the worktree for a fresh branch from `origin/{defaultBranch}`
      with `superpowers:using-git-worktrees`, or plainly
      `git worktree add --no-track -b {branch} {path} origin/{defaultBranch}`. `defaultBranch` comes
@@ -140,9 +167,9 @@ from `session-start`; call `session-step` as each step begins.
      `completed/`. Follow `plan-workflow` for a plan that leaves `in-progress/` unfinished, and say
      where it stands in the handover.
    - `implement` stops here with the handover in `references/handover.md`.
-7. **Ship** (`ship`). Run `ticket-end` for the ticket. It commits under its commit rules,
+7. **Ship** (`ship`). Run `ticket-ship` for the ticket. It commits under its commit rules,
    completes the plan at the PR with post-PR checks as `verify` reminders, pushes without force,
-   opens the draft PR through `ado-pr` with the work item linked, and ends the session. Its exit
+   opens the draft PR through `pr-create` with the ticket linked, and ends the session. Its exit
    code is `ship`'s, passed through unchanged, and its last line, the PR URL, is `ship`'s last line.
 8. **Finish** (`plan`, `implement`). Run `session-workflow end`: it removes the session's isolated
    environment, then runs `session-end`, which releases every lock the session holds and removes its
@@ -153,7 +180,8 @@ from `session-start`; call `session-step` as each step begins.
 ## Parallel sessions
 
 The session file, locks and stale files are `session-workflow`'s: a ticket session's subject is
-`ticket:{id}`, and every lock follows its *Locks* section.
+`ticket:{id}`, the number alone whichever tracker it is in, and every lock follows its *Locks*
+section.
 
 ## Isolated environments
 
@@ -162,16 +190,17 @@ runs, `session-workflow` keeps the session's record of it and removes it at ever
 *Isolated environments*. The rules for the environment itself, a clean start and never widening it,
 are in `test-filter-development`'s reference, `isolated-environments.md`.
 
-## Expired Azure login
+## Expired login
 
-Any script verb that reaches ADO exits 3 when the token call fails or mentions `az login`, `AADSTS`
-or a refresh token, when ADO answers 401 or 203, or when it returns an HTML page where JSON was
-expected. The JSON then carries `loginCommand`, and `tenant` when the Azure CLI still has one cached. On exit 3:
+Any script verb that reaches a server exits 3 when its login is missing or expired. The JSON then
+carries `loginCommand`. The details of what each tool reports are in the tracker's reference. On
+exit 3:
 
-- Stop immediately. Do not retry, do not run `az login` (it is interactive), do not guess the
-  ticket's contents, and do not continue work that depends on it.
-- If the JSON has `tenant`, give the caller `loginCommand` as it is. If it has no `tenant`, ask the
-  caller for their tenant, then give them `az login --tenant {their answer}`.
+- Stop immediately. Do not retry, do not run the login command yourself (`az login` and
+  `gh auth login` are interactive), do not guess the ticket's contents, and do not continue work
+  that depends on it.
+- Give the caller `loginCommand` as it is. For `az`, when the JSON has no `tenant`, ask the caller
+  for their tenant first, then give them `az login --tenant {their answer}`.
 - Name the step that stopped and what is already done. The next invocation resumes there.
 - Run `session-workflow end`, as at any other stop.
 
@@ -193,18 +222,20 @@ $ss = if ($env:CLAUDE_PLUGIN_ROOT) {
 & "$ss\session.ps1" sessions
 ```
 
-`ticket.ps1` needs PowerShell 7 and the Azure CLI, logged in. The org, project and repository come
-from `origin`, in its HTTPS or SSH form. The result is JSON on stdout.
+`ticket.ps1` needs PowerShell 7, and the CLI of each server it reaches, logged in: the Azure CLI
+(`az`) for Azure DevOps and Azure Boards, the GitHub CLI (`gh`) for GitHub. The host, organization
+and repository come from `origin`, in its HTTPS or SSH form. The result is JSON on stdout. The
+calls for each host are in `ticket-ado.ps1` and `ticket-github.ps1` beside it.
 
 | Verb | Does |
 |---|---|
-| `repo` | Reads `origin` and the server's `defaultBranch` |
-| `workitem -Id` | Type, title, state, fields, ticket URL, team project and relations |
+| `repo` | Reads `origin`: the `host`, the repository and the server's `defaultBranch` |
+| `workitem -Id [-Tracker] [-AdoOrg]` | The ticket: `tracker`, type, title, state, description, URL and the tracker's own fields |
 | `branch-name -Id -Type -Title` | The fallback branch name |
-| `pr-find -Branch` | Active PRs from the branch, for the *shipped* stage check |
-| `session-find -Id -Repo` | The ticket's session, for `ticket-end` |
+| `pr-find -Branch` | Open PRs from the branch, for the *shipped* stage check |
+| `session-find -Id -Repo` | The ticket's session, for `ticket-ship` |
 
-The draft PR is opened through `ado-pr`, by `ticket-end`; `ticket.ps1` has no verb for it.
+The draft PR is opened through `pr-create`, by `ticket-ship`; `ticket.ps1` has no verb for it.
 
 The session and lock verbs (`session-start`, `session-step`, `session-end`, `sessions`,
 `lock-acquire`, `lock-status`, `lock-release`, `lock-break`) run `session.ps1`, from
@@ -213,12 +244,12 @@ The session and lock verbs (`session-start`, `session-step`, `session-end`, `ses
 | Exit | Means |
 |---|---|
 | 0 | Done |
-| 1 | Unexpected error, or the Azure CLI is missing |
+| 1 | Unexpected error, or the Azure CLI or GitHub CLI is missing |
 | 2 | Busy or conflicting, from `session.ps1`: a lock is held, or a session file exists for the ticket |
-| 3 | The Azure login has expired; the JSON carries `loginCommand`, and `tenant` when one is cached |
-| 4 | Refused input: not an ADO remote, an unsupported type, a session `ticket-end` refuses; from `session.ps1`, a malformed name or subject, an unknown mode or session |
+| 3 | The `az` or `gh` login has expired; the JSON carries `loginCommand`, and for `az` a `tenant` when one is cached |
+| 4 | Refused input: a remote on neither host, a ticket this repository cannot read (see `error`), an unsupported type, a session `ticket-ship` refuses; from `session.ps1`, a malformed name or subject, an unknown mode or session |
 
-The script never edits a work item, merges, or runs `az login`. Its battery is
+The script never edits a ticket, merges, or runs a login. Its battery is
 `test/Test-TicketScript.ps1`, which exits 0 only when every case passes.
 
 ## Do not
@@ -226,8 +257,8 @@ The script never edits a work item, merges, or runs `az login`. Its battery is
 - Stash, discard or unstage anyone's work. The one exception is a redo the caller has agreed to (see
   *Running modes in sequence*).
 - Force-push, merge, set auto-complete or add reviewers.
-- Edit the work item.
-- Run `az login`.
+- Edit the ticket: no field, state, label or comment, on either tracker.
+- Run `az login` or `gh auth login`.
 - Delete another session's file, lock or isolated environment silently.
 - Leave an isolated environment running at a stop, or widen its isolation to make a check pass.
 - Touch the caller's own checkout, except under `--in-place`.
