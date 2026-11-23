@@ -15,6 +15,9 @@ piece at a time. The spec records what the system is and what has shipped; each 
 and why for one delivery. Each rule below carries
 the reason for it.
 
+A plan states its change to the spec in a **feature-spec**, which merges into the spec when the
+plan completes. The section's shape is `plan-writing-syntax`'s.
+
 Start a new spec from [`spec-template.md`](spec-template.md).
 
 ## Rules
@@ -159,8 +162,22 @@ Code fences are ignored, so pseudocode with `#` comments and example feature lin
 2. Set each feature's status to the release (`v1`, `v1 interim`).
 3. Write the plan with `delivers:` naming each feature, then run `spec-table --fix`. The plan
    appears in the Plan column.
-4. A feature spec embedded in the plan is checked against the system spec before the plan is
-   approved: where it fits, and whether it conflicts.
-5. When the plan completes, set each feature to `Shipped` or `Shipped interim`, and run
-   `spec-table --fix`. Validation fails while a completed plan still delivers a feature with a
-   release status.
+4. The plan's `## Feature-spec` section (`plan-writing-syntax`) is checked against the system spec
+   before the plan is approved. Each block must `agree` with the feature's current text, `amend` it
+   and say why, or `add` a new feature. An `amend` that conflicts with another plan in flight is
+   settled by the spec's `owner` before either plan starts.
+5. When the plan completes, merge each feature-spec block into this spec in the same pull request
+   as the code. Set each feature to `Shipped` or `Shipped interim`, and run `spec-table --fix`.
+   Validation fails while a completed plan still delivers a feature with a release status.
+
+Completed plans are never edited. A later change to a shipped feature is a new plan with its own
+feature-spec, which amends the text here.
+
+## Areas without a system spec
+
+| Situation | Skill |
+|---|---|
+| The system exists and its plans are missing or unusable | `system-spec-derive` writes a draft from the code, docs, ADRs and tests |
+| The system was built plan by plan, and the plans are in `planning/` | `system-spec-backfill` merges their feature-specs, or the design sections of older plans, in date order |
+
+Both write a spec with `status: draft` in this format, and the spec's `owner` accepts it.

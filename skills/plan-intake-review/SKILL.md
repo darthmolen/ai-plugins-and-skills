@@ -34,20 +34,28 @@ If files exist in `in-progress/`:
 - Ask: Resume the stale review, or move it back to `needs-review/` and start fresh?
 - Wait for user decision before proceeding.
 
-### Step 2.5: Defensive Type Check
+### Step 2.5: Defensive Kind Check
 
-Read the file's frontmatter `type:` field (if present):
+Read the file's frontmatter `kind:` field. A review copy is `kind: review`. Its `type:`
+(`plan` or `code-review-plan`) only says what kind of plan it was copied from:
 
-| Found type | Action |
+| Found | Action |
 |---|---|
-| `plan` | OK — proceed to Step 3. |
-| `code-review-plan` | OK — meta-plans review like any plan. Proceed to Step 3. |
-| (missing) | OK — treat as `plan`. Proceed to Step 3. |
-| `code-review-slice` | **Auto-forward.** Move file to `planning/code-reviews/needs-review/<file>.md` and alert: "Auto-forwarded `<filename>` from plan queue to code-review queue (type: code-review-slice)." Skip this run; the file will be picked up by `code-intake-review`. |
-| `reminder` | Move back to `needs-review/` with an intake-error note: reminders are not reviewed. See `reminders-set`. Alert user. |
-| any other value | Move back to `needs-review/` (if not already there) with a one-line intake-error note prepended quoting the unexpected value. Alert user. |
+| `kind: review` | OK — proceed to Step 3. A meta-plan (`type: code-review-plan`) reviews like any plan. |
+| `kind: plan`, or no `kind:` | OK — an older copy. Proceed to Step 3, and when it reaches `reviewed/`, tell the author to give it the `kind: review` block (`plan-send-review` Step 3). |
+| `kind: slice`, or legacy `type: code-review-slice` | **Auto-forward.** Move the file to `planning/code-reviews/needs-review/<file>.md` and alert: "Auto-forwarded `<filename>` from the plan queue to the code-review queue." Skip this run, because `code-intake-review` will pick it up. |
+| `kind: reminder` | Leave it in `needs-review/` with an intake-error note: reminders are not reviewed (see `reminders-set`). Alert the user. |
+| any other value | Leave it in `needs-review/` with a one-line intake-error note prepended quoting the unexpected value. Alert the user. |
 
-This is the mirror of `code-intake-review`'s Step 3a. Together the two checks self-correct a spec dropped in the wrong queue without losing the file — which matters because the two queues are one keystroke apart and the failure is otherwise silent.
+This is the mirror of `code-intake-review`'s Step 3a. Together the two checks self-correct a slice dropped in the wrong queue without losing the file — which matters because the two queues are one keystroke apart and the failure is otherwise silent.
+
+**On the `reviews:` back-reference (and any other reference) — resolve by the name rule, never by eye.** A review copy carries `reviews: <plan name>` (`plan-send-review` Step 3), and the plan it was copied from may carry `parent_plan:`, `delivers:`, or body links. Every one of these is a **name**, not a filename:
+
+> A name is the document's filename with its kind prefix **and** `.md` removed. Only `feature_`, `bug_` and `stub_` are stripped — `wave-<n>_` is **not**. So `reviews: pii-ner-processor-service_2026-09-25` and the file `feature_pii-ner-processor-service_2026-09-25.md` **are a match** — the absent `feature_` is the name working as designed, not a mismatch to flag.
+
+Do **not** reject a review copy because a reference "doesn't exactly match" a filename. The rule above is portable and needs no tooling — apply it directly. Where you can run C#, `plan-doc.cs validate --path planning` is the authority (it resolves `reviews:` / `parent_plan` / `delivers:`); invoke it as `plan-workflow` → *The scripts* documents, since that skill owns the script and the one correct way to locate it. Do not re-derive the script path here, and do not assume the validator is reachable — it is not in every harness (notably not vanilla Copilot CLI), which is why the rule is stated inline above.
+
+A value containing `/`, `\`, or a trailing `.md` is a path, which **is** an error (`PATH-NOT-NAME`); a bare name that resolves under the rule is not. The full contract lives in `plan-writing-syntax` ("References are names, never paths"). `code-intake-review` Step 3 states the same rule for a slice's `plan_docs`.
 
 ### Step 3: Move to In-Progress
 

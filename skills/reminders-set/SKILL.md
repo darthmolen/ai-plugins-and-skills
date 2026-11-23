@@ -41,6 +41,9 @@ Write one when a plan names something that:
 - **needs an occasion** — the next session, the start of a work area, a scheduled window
 - **cannot fail a test** — anything where "we forgot" and "we did it and it was fine" look
   identical afterwards
+- **happens after the PR** — PR validation, a deploy, a run in an environment the plan does not
+  control, a smoke test. The plan completes at the PR (`plan-workflow`), and a `verify` reminder
+  carries each check from there
 
 Do **not** write one for work a plan already owns. A plan phase is not a reminder; a backlog
 item is not a reminder. If a test could catch it, write the test instead — that is always the
