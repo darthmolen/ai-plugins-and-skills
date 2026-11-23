@@ -1,0 +1,35 @@
+# Python project standard: the python-architect skill. Layout: flat (tools/ + tests/).
+
+[project]
+name = "@name@"
+version = "0.1.0"
+description = ""
+requires-python = ">=@python_version@"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.7"]
+
+# A script project is run, not installed. The build system and the empty module lists exist
+# only so the pip fallback (`pip install -e . --group dev`) can install the dependencies.
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+py-modules = []
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "@target_version@"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+pythonpath = ["tools"]
+testpaths = ["tests"]

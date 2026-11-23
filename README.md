@@ -10,6 +10,8 @@ Cross-platform AI coding assistant skills following the [Agent Skills](https://a
 | [Copilot CLI](documentation/README-COPILOT-CLI.md) | Skills supported | Installation and current limitations |
 | [VS Code Copilot](documentation/README-VSCODE-COPILOT.md) | Skills supported | Installation and usage |
 
+What the skills expect on your machine (git, the .NET 10 SDK, pwsh 7, Python with `uv`, and the `superpowers` plugin in Claude Code) is listed once, in the [Claude Code prerequisites](documentation/README-CLAUDECODE.md#prerequisites). The planning terms the skills share are defined in [VOCABULARY.md](documentation/VOCABULARY.md).
+
 ## Skills
 
 Skills are situational knowledge files an AI coding harness loads when their description matches what you're doing — repeatable processes, agent-callable tools, or domain knowledge. See [skills/README.md](skills/README.md) for the longer intro and per-harness install guides.
@@ -18,11 +20,11 @@ Skills are situational knowledge files an AI coding harness loads when their des
 
 <!-- write category flavor text here; the table below is auto-generated -->
 
-Local, adversarial review workflows — first the plan (or spec), then the code commits.
+Local, adversarial review workflows — first the plan, then the code commits.
 
 For planning: run [plan-send-review](skills/plan-send-review/) in your authoring session, bounce to a second session (or a different agent) for [plan-intake-review](skills/plan-intake-review/), then return to the original session and run [plan-receive-review](skills/plan-receive-review/) to read the feedback.
 
-For code commits, pick a path: one large ad-hoc review with [code-send-review](skills/code-send-review/), or slice-and-dice a branch into multiple slices with [code-review-plan-create](skills/code-review-plan-create/) that will then get reviewed in parallel and rolled into a single pre-merge action list via [code-synthesize-reviews](skills/code-synthesize-reviews/).
+For code commits, pick a path: one large ad-hoc review with [code-send-review](skills/code-send-review/), or slice-and-dice a branch into multiple slices with [code-review-plan-create](skills/code-review-plan-create/) that will then get reviewed in parallel and rolled into a single pre-merge action list via [code-synthesize-reviews](skills/code-synthesize-reviews/). The meta-plan, the slices and the syntheses are planning documents under the same frontmatter contract as a plan, so `plan-doc.cs validate` checks them; each synthesis run writes a new numbered file rather than overwriting the last.
 
 See [documentation/workflows/](documentation/workflows/README.md) for the full plan-review and code-review workflows — state machines, directory layouts, and the spec-driven coding workflow that ties them together.
 
@@ -32,11 +34,11 @@ See [documentation/workflows/](documentation/workflows/README.md) for the full p
 | [plan-send-review](skills/plan-send-review/) | Use when you have authored a plan and want the other AI agent (Claude or Copilot) to review it - ... |
 | [plan-intake-review](skills/plan-intake-review/) | Use on a loop interval to check for plans awaiting review in planning/needs-review/, move to in-p... |
 | [plan-receive-review](skills/plan-receive-review/) | Use when a plan you authored has been reviewed and is waiting in planning/needs-review/reviewed/ ... |
-| [code-send-review](skills/code-send-review/) | Use when queueing a slice of a branch for code review — builds a slice spec from a commit range, ... |
+| [code-send-review](skills/code-send-review/) | Use when queueing a slice of a branch for code review — builds a slice from a commit range, focus... |
 | [code-intake-review](skills/code-intake-review/) | Use on a loop interval to check for code slices awaiting review in planning/code-reviews/needs-re... |
 | [code-review-apply](skills/code-review-apply/) | Use when reviewed code-review slices are ready for triage and the developer wants to walk finding... |
 | [code-review-plan-create](skills/code-review-plan-create/) | Use when ready to plan a code review of a development branch — walks the branch, discovers existi... |
-| [code-review-seed-slices](skills/code-review-seed-slices/) | Use when a code-review meta-plan is finalized and you need to fan it out into one slice spec per ... |
+| [code-review-seed-slices](skills/code-review-seed-slices/) | Use when a code-review meta-plan is finalized and you need to fan it out into one slice per row i... |
 | [code-review-plan-execute](skills/code-review-plan-execute/) | Use when a code-review meta-plan is ready and you want to drive the full review pipeline — pre-fl... |
 | [code-synthesize-reviews](skills/code-synthesize-reviews/) | Use when multiple code-review slices have been reviewed and you need a consolidated pre-merge act... |
 <!-- END SKILLS: review-helpers -->
@@ -51,17 +53,19 @@ When a workflow is known up front, a curated tool almost always beats ad-hoc age
 2. [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed — or any other credential source [`DefaultAzureCredential`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential) will pick up
 3. Authenticated via `az login`
 
-The Azure steps apply only to the Azure tools. [mutation-harness](skills/mutation-harness/) needs only the SDK: it seeds one fault, runs any test command, reports which tests caught it and always reverts — the MUTATE step of test-filter-development.
+The Azure steps apply only to the Azure tools. [mutation-harness](skills/mutation-harness/) needs only the SDK: it seeds one fault, runs any test command, reports which tests caught it and always reverts — the MUTATE step of test-filter-development. [python-project](skills/python-project/) needs Python and [uv](https://docs.astral.sh/uv/) instead: it scaffolds a Python project or audits one against `python-architect`, and in Claude Code it is also the `/ai-plugins-and-skills:python-project` command. [ado-pr](skills/ado-pr/) opens and updates Azure DevOps pull requests through the Azure DevOps MCP tools.
 
 <!-- SKILLS: tools -->
 | Skill | Description |
 |-------|-------------|
 | [codebase-mapper](skills/codebase-mapper/) | Generate a deterministic architecture map of Python, C#, and TypeScript codebases using AST parsing |
 | [ace-fca-workflow](skills/ace-fca-workflow/) | Advanced Context Engineering with Frequent Intentional Compaction (ACE-FCA) for complex coding tasks |
+| [ado-pr](skills/ado-pr/) | Use when creating or updating an Azure DevOps pull request via the ado MCP tools — after plan-wor... |
 | [azure-servicebus-operations](skills/azure-servicebus-operations/) | Use when peeking, draining, snapshotting metrics on, enumerating, or otherwise inspecting/manipul... |
 | [bulk-rename](skills/bulk-rename/) | Use when a refactor needs the same identifier rename applied across many files (type-cluster rena... |
 | [mutation-harness](skills/mutation-harness/) | Use when seeding a mutant to check whether a test suite actually detects a wrong answer — the MUT... |
 | [psql-query](skills/psql-query/) | Use when running ad-hoc read-only SQL against Azure Database for PostgreSQL — exploring tables, s... |
+| [python-project](skills/python-project/) | Use when scaffolding a new Python project or auditing an existing one against the python-architec... |
 | [sql-query](skills/sql-query/) | Use when running ad-hoc read-only T-SQL against Azure SQL — exploring Query Store, sampling table... |
 <!-- END SKILLS: tools -->
 
@@ -84,11 +88,15 @@ Plenty of general-purpose language helpers exist already, so no need to duplicat
 
 <!-- write category flavor text here; the table below is auto-generated -->
 
-Where the review helpers above handle one review, these decide how much process a piece of work deserves in the first place — and then hold you to it. Start with [spec-tier](skills/spec-tier/) to route a task to a Low/Medium/High spec depth by stakes, let [plan-workflow](skills/plan-workflow/) move the resulting document through the `planning/` kanban while [plan-writing-syntax](skills/plan-writing-syntax/) governs what goes *on* the card — the frontmatter, the per-kind status vocabularies, and cross-references written as names so they survive the document moving column — and use [test-filter-development](skills/test-filter-development/) instead of plain TDD when an agent is writing the code — it makes the test filter load-bearing by demanding captured RED output and a seeded mutant rather than a claim that the tests were written first.
+Where the review helpers above handle one review, these decide how much process a piece of work deserves in the first place — and then hold you to it. Start with [plan-tier](skills/plan-tier/) to route a task to a Low/Medium/High plan depth by stakes (`spec-tier` remains as a deprecated name for it), let [plan-workflow](skills/plan-workflow/) move the resulting document through the `planning/` kanban while [plan-writing-syntax](skills/plan-writing-syntax/) governs what goes *on* the card — the frontmatter, the per-kind status vocabularies, and cross-references written as names so they survive the document moving column — and use [test-filter-development](skills/test-filter-development/) instead of plain TDD when an agent is writing the code — it makes the test filter load-bearing by demanding captured RED output and a seeded mutant rather than a claim that the tests were written first.
 
 Four more keep the board honest once work is underway: [plan-sweep-blockers](skills/plan-sweep-blockers/) moves plans that have quietly stalled out of the in-progress column and records what each one is waiting on, [plan-clear-blockers](skills/plan-clear-blockers/) turns that blocked column into an agenda for the hour when the scarce device, environment or person is finally available, [reminders-set](skills/reminders-set/) files the tasks a person must actually do — the ones no test or gate will ever catch — and [plan-record-review](skills/plan-record-review/) writes down what a review decided once you have evaluated it, so the rejections survive the conversation that produced them.
 
 Three skills cover three scales, and each works without the others: [system-spec](skills/system-spec/) is the product — one evergreen spec per area that plans cite feature by feature in `delivers:`; [plan-workflow](skills/plan-workflow/) is one piece of work, now with `scripts/plan-doc.cs` to validate the board and make a move-plus-status-change one step; and [wave-workflow](skills/wave-workflow/) runs several plans in parallel on separate tracks under one lead session, with `wave-lead` and `wave-track` agents to start them in Claude Code. [brown-bag](skills/brown-bag/) turns existing documentation into a talk: outline, slide outline and participant material.
+
+An area built before it had a system spec can get one: [system-spec-backfill](skills/system-spec-backfill/) merges the feature-specs and design sections of its completed plans in date order, and [system-spec-derive](skills/system-spec-derive/) drafts one from the code when there are no usable plans. Each plan's feature-spec then merges into the system spec in the same pull request as the code, and the plan completes at that pull request, with any post-merge check filed as a `verify` reminder.
+
+When more than one agent works on one machine, [session-workflow](skills/session-workflow/) gives each a session file with its subject and mode (`plan`, `implement`, `commit`, `ship` or `lead`), locks on shared ports, databases and containers, and teardown at every stop; the lead and every track of a wave is one such session. [ticket-start](skills/ticket-start/) and [ticket-end](skills/ticket-end/) drive a session from an Azure DevOps work item to a draft pull request linked to it. In Claude Code, the plugin's `wave-session-title` hook names wave sessions `wave-<n>-lead` or `wave-<n>-<track>` from their first prompt, so nobody renames tabs by hand; it needs pwsh 7. See [SESSION-WORKFLOW.md](documentation/workflows/SESSION-WORKFLOW.md) and [WAVE-WORKFLOW.md](documentation/workflows/WAVE-WORKFLOW.md).
 
 <!-- SKILLS: workflow-composers -->
 | Skill | Description |
@@ -97,13 +105,19 @@ Three skills cover three scales, and each works without the others: [system-spec
 | [plan-clear-blockers](skills/plan-clear-blockers/) | Turns planning/blocked/ into an agenda for a session that could actually clear it |
 | [plan-record-review](skills/plan-record-review/) | Records what a plan review actually decided — accepted, merged, rejected, flagged — so the reason... |
 | [plan-sweep-blockers](skills/plan-sweep-blockers/) | Finds plans that are stuck, records what they are stuck on, moves them to planning/blocked/, and ... |
+| [plan-tier](skills/plan-tier/) | Route a task to a Low/Medium/High plan tier by stakes, then enforce the matching plan depth, revi... |
 | [plan-workflow](skills/plan-workflow/) | Manages planning documentation through the kanban board at planning/ |
 | [plan-writing-syntax](skills/plan-writing-syntax/) | Use when writing or editing any planning document — a plan, a backlog stub, a reminder, a review ... |
 | [prompt-dotnet](skills/prompt-dotnet/) | Composes and executes a standardized, spec-driven, test-first .NET feature prompt |
 | [reminders-set](skills/reminders-set/) | Records a task a person must actively do, which no test or gate can catch |
-| [spec-tier](skills/spec-tier/) | Route a task to a Low/Medium/High spec tier by stakes, then enforce the matching spec depth, revi... |
+| [session-workflow](skills/session-workflow/) | Use when a session is about to work in a repository alongside other sessions — a ticket from tick... |
+| [spec-tier](skills/spec-tier/) | Deprecated name; invoke plan-tier. |
 | [system-spec](skills/system-spec/) | Use when writing or editing a system spec — the document under docs/specs/ that describes the tar... |
+| [system-spec-backfill](skills/system-spec-backfill/) | Use when an area was built plan by plan and its plans in planning/completed/ and planning/in-prog... |
+| [system-spec-derive](skills/system-spec-derive/) | Use when an existing system has no system spec and no usable plans to build one from — writes a d... |
 | [test-filter-development](skills/test-filter-development/) | Use when implementing any feature or bugfix with AI assistance, before writing implementation code |
+| [ticket-end](skills/ticket-end/) | Use when an Azure DevOps ticket's work is implemented and verified and should become a draft PR, ... |
+| [ticket-start](skills/ticket-start/) | Use when someone gives an Azure DevOps work item number and wants it planned, implemented or ship... |
 | [wave-workflow](skills/wave-workflow/) | Use when several plans need to run in parallel across tracks under one lead session — setting up ... |
 <!-- END SKILLS: workflow-composers -->
 
@@ -113,17 +127,21 @@ Three skills cover three scales, and each works without the others: [system-spec
 
 Stack-specific expertise the agent loads when it recognizes the stack — framework idioms, current API surface, and the mistakes that stack in particular invites. Unlike the language helpers above, these are not about enforcing a house style; they are about knowing the material.
 
+The suffix says which one to load: `-architect` for project setup and design decisions, `-developer` for writing application code, and `-engineer` for infrastructure and platform work. [python-architect](skills/python-architect/) sets a Python project up, [python-developer](skills/python-developer/) writes service code in it, and [python-data](skills/python-data/) covers dataframe and notebook code.
+
 <!-- SKILLS: domain-skills -->
 | Skill | Description |
 |-------|-------------|
 | [angular-architect](skills/angular-architect/) | Expert Angular architect mastering Angular 20+ with enterprise patterns |
-| [angular-expert](skills/angular-expert/) | Angular 20+/TypeScript frontend expert |
+| [angular-developer](skills/angular-developer/) | Angular 20+/TypeScript frontend expert |
 | [azure-infra-engineer](skills/azure-infra-engineer/) | Azure cloud infrastructure expert specializing in network design, identity integration, PowerShel... |
 | [dotnet-secrets](skills/dotnet-secrets/) | Secrets hygiene for .NET development |
-| [python-pro](skills/python-pro/) | Python backend expert |
-| [react-specialist](skills/react-specialist/) | React best practices expert |
-| [sql-pro](skills/sql-pro/) | Expert SQL developer specializing in complex query optimization, database design, and performance... |
-| [typescript-pro](skills/typescript-pro/) | TypeScript best practices expert |
+| [python-architect](skills/python-architect/) | Python project setup and tooling standard: pyproject.toml, PEP 735 dependency groups, uv and uv.l... |
+| [python-data](skills/python-data/) | Python data code for reporting and Microsoft Fabric work: pandas and polars idioms, explicit dtyp... |
+| [python-developer](skills/python-developer/) | Python backend code |
+| [react-developer](skills/react-developer/) | React best practices expert |
+| [sql-developer](skills/sql-developer/) | Expert SQL developer specializing in complex query optimization, database design, and performance... |
+| [typescript-developer](skills/typescript-developer/) | TypeScript best practices expert |
 <!-- END SKILLS: domain-skills -->
 
 ## Curriculum — a separate, opt-in plugin

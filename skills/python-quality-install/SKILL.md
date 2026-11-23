@@ -1,12 +1,16 @@
 ---
 name: python-quality-install
-description: Use when initializing a new Python project or adding quality tooling to an existing one - sets up ruff linter and formatter, pyright type checker, and pre-commit hooks with opinionated defaults that enforce python-quality-developer standards
+description: Use when initializing a new Python project or adding quality tooling to an existing one - sets up ruff linter and formatter, pyright type checker, and pre-commit hooks with opinionated defaults that enforce python-quality-developer standards. For the project setup standard itself (pyproject.toml, uv and uv.lock, dependency groups, layout, CI pipeline) use python-architect, and python-project to scaffold or audit it
 metadata:
   category: language-helpers
 ---
 # Python Quality Install
 
 Set up ruff, pyright, and pre-commit in a Python project. Run as `/python-quality-install`.
+
+This layers on top of the `python-architect` project standard. If the project already follows it,
+merge into its existing `[tool.ruff]` table, keep `target-version` matching `requires-python`, and
+keep its layout (`src = ["tools"]` and `"include": ["tools"]` for a flat script project).
 
 ## What It Does
 
@@ -83,10 +87,10 @@ repos:
 
 ### 4. Add dev dependencies
 
-Add to `[project.optional-dependencies]` in pyproject.toml:
+Add to the PEP 735 `[dependency-groups]` table in pyproject.toml (`uv add --dev ruff pyright pre-commit` does this):
 
 ```toml
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     # ... existing dev deps ...
     "ruff>=0.8",
@@ -98,7 +102,7 @@ dev = [
 ### 5. Install and run
 
 ```bash
-pip install -e ".[dev]"
+uv sync                   # or: pip install -e . --group dev  (pip >= 25.1)
 pre-commit install        # may fail if core.hooksPath is set — that's OK
 ruff check src/ tests/ --fix          # auto-fix what it can
 ruff check src/ tests/ --fix --unsafe-fixes  # fix unused vars etc.

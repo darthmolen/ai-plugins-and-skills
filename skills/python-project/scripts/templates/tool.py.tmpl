@@ -1,0 +1,23 @@
+"""@name@: describe what this tool does.
+
+Exit codes: 0 success, 1 problems found, 2 could not run.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="@module@", description=__doc__)
+    parser.parse_args(argv)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception as exc:  # noqa: BLE001 - the exit-code contract needs every failure
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(2)
