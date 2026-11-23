@@ -20,8 +20,15 @@ After `code-review-plan-execute` finishes — slices are in `planning/code-revie
 ### Step 1: Find Slices to Apply
 
 ```bash
-ls planning/code-reviews/needs-review/reviewed/*-code-review-*-slice-*.md 2>/dev/null
+ls planning/code-reviews/needs-review/reviewed/*-code-review-*-slice-*.md \
+   planning/code-reviews/needs-review/reviewed/*-code-review-slice-*.md 2>/dev/null | sort -u
 ```
+
+The first glob catches the current form; the second catches legacy
+`YYYY-MM-DD-code-review-slice-NN-<slug>.md` files, which the first does not match.
+
+**Moves use `git mv`** when the file is tracked, and plain `mv` when it is not yet tracked
+(`git ls-files --error-unmatch <file>` fails). This applies to every move below.
 
 Filter to `kind: slice` with `status: reviewed`. A file with no `kind:` is a legacy slice. Migrate it
 first (add `kind: slice`, `status:`, `date:` and `initiative:`, and turn `parent_plan:` and
@@ -132,12 +139,14 @@ everything it produced in one pass:
    No open synthesis? Skip this. One may never have been written.
 2. **The meta-plan** named by the slices' `parent_plan:`. It is `in-progress`. Complete it like
    any plan: write its Status block (slices, findings accepted/merged/rejected/deferred, and what
-   was deferred to where), then
+   was deferred to where) to a separate file, not into the meta-plan, then
    ```bash
-   dotnet run "$plan/plan-doc.cs" -- close --doc planning/in-progress/<meta-plan>.md --to completed --completed <YYYY-MM-DD>
+   dotnet run "$plan/plan-doc.cs" -- close --doc planning/in-progress/<meta-plan>.md --to completed \
+     --status-block ./statusblock.md --completed <YYYY-MM-DD>
    ```
-   (`plan-workflow` sets `$plan`.) If you are not using `close`, `git mv` it to `completed/` and
-   set `status: completed` and `completed:`.
+   (`plan-workflow` sets `$plan`.) `close` appends the block itself and refuses a document that
+   already has a `## Status` section. If you are not using `close`, append the block to the
+   meta-plan, `git mv` it to `completed/`, and set `status: completed` and `completed:`.
 3. Run `plan-doc.cs validate --path planning`, then commit with
    `[PLAN] Complete: code review <initiative>`, or `[FEATURE]` if the accepted fixes ship in the
    same commit.

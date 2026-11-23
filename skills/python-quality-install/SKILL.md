@@ -102,14 +102,18 @@ dev = [
 ### 5. Install and run
 
 ```bash
-uv sync                   # or: pip install -e . --group dev  (pip >= 25.1)
-pre-commit install        # may fail if core.hooksPath is set — that's OK
-ruff check src/ tests/ --fix          # auto-fix what it can
-ruff check src/ tests/ --fix --unsafe-fixes  # fix unused vars etc.
-ruff format src/ tests/               # format everything
-ruff check src/ tests/                # should be clean now
-pyright src/                          # fix any type errors
+uv sync                   # installs into .venv; it does not activate it
+uv run pre-commit install # may fail if core.hooksPath is set — that's OK
+uv run ruff check src/ tests/ --fix          # auto-fix what it can
+uv run ruff check src/ tests/ --fix --unsafe-fixes  # fix unused vars etc.
+uv run ruff format src/ tests/               # format everything
+uv run ruff check src/ tests/                # should be clean now
+uv run pyright src/                          # fix any type errors
 ```
+
+`uv run` uses the project's `.venv`, so a bare `ruff` or `pyright` on the PATH (missing, or a
+different version) is never picked up. On the pip path, activate the environment you installed into
+and drop the `uv run` prefix. Step 7 follows the same rule.
 
 ### 6. Fix remaining violations
 
@@ -126,10 +130,10 @@ After auto-fix, common manual fixes needed:
 ### 7. Verify
 
 ```bash
-ruff check src/ tests/           # All checks passed!
-ruff format --check src/ tests/  # N files already formatted
-pyright src/                     # 0 errors, 0 warnings
-pytest tests/ -v                 # All passing
+uv run ruff check src/ tests/           # All checks passed!
+uv run ruff format --check src/ tests/  # N files already formatted
+uv run pyright src/                     # 0 errors, 0 warnings
+uv run pytest tests/ -v                 # All passing
 ```
 
 ## When to Use

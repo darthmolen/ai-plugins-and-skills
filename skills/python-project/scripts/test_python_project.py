@@ -306,6 +306,22 @@ def test_new_rejects_bad_name_with_exit_2(tmp_path, capsys, bad):
     assert code == 2
 
 
+@pytest.mark.parametrize("kind", ["script", "package"])
+@pytest.mark.parametrize("keyword", ["class", "Class", "import", "lambda"])
+def test_new_rejects_name_whose_module_is_a_keyword_and_writes_nothing(
+    tmp_path, capsys, kind, keyword
+):
+    # `from class import main` cannot be imported, so the scaffold would fail its own tests.
+    code, _ = run_new(tmp_path, capsys, "--kind", kind, "--name", keyword, "--apply", "--no-lock")
+    assert code == 2
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_new_accepts_name_that_only_contains_a_keyword(tmp_path, capsys):
+    code, _ = run_new(tmp_path, capsys, "--kind", "script", "--name", "import-lib")
+    assert code == 0
+
+
 def test_new_rejects_bad_python_version_with_exit_2(tmp_path, capsys):
     code, _ = run_new(tmp_path, capsys, "--kind", "script", "--name", "x", "--python", "3")
     assert code == 2

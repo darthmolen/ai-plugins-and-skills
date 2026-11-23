@@ -30,7 +30,7 @@ ls planning/code-reviews/needs-review/*-code-review-*-slice-*.md \
    | grep -v .gitkeep | sort -u
 ```
 
-The first glob catches the current form; the second catches legacy. `sort -u` collapses any duplicates (legacy files happen to also match the current glob since `<initiative>` between `code-review-` and `-slice-` can be any token).
+The first glob catches the current form; the second catches legacy, which the first does not match (`*-code-review-*-slice-*` needs a token between `code-review-` and `-slice-`). `sort -u` collapses any duplicates.
 
 - **No files:** Do nothing. Return silently. No output at all. (This skill runs on a loop.)
 - **One file:** Proceed to Step 2.

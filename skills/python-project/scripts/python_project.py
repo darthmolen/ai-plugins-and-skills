@@ -6,6 +6,7 @@ Exit codes: 0 success, 1 problems found, 2 could not run.
 from __future__ import annotations
 
 import argparse
+import keyword
 import re
 import shutil
 import subprocess
@@ -148,9 +149,12 @@ def plan_project(kind: str, name: str, python: str) -> dict[str, str]:
     version = PYTHON_VERSION.match(python)
     if not version:
         raise CannotRun(f"--python {python!r} must look like 3.11")
+    module = re.sub(r"[.-]", "_", name).lower()
+    if keyword.iskeyword(module) or keyword.issoftkeyword(module):
+        raise CannotRun(f"project name {name!r} makes module {module!r}, a Python keyword")
     values = {
         "name": name,
-        "module": re.sub(r"[.-]", "_", name).lower(),
+        "module": module,
         "python_version": python,
         "target_version": f"py3{version.group(1)}",
     }

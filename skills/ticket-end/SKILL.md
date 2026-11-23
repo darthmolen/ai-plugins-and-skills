@@ -60,13 +60,22 @@ is a session.
    `superpowers:verification-before-completion`. Report build, standards check and tests separately,
    with actual outcomes. If verification fails, stop: no commit, no push. When `ship` delegated here
    straight after its own step 6, that verification stands unless a file has changed since.
+   - **When the caller has staged a set that differs from the working tree** (`git diff --quiet`
+     exits non-zero), verify what will be committed, not the working tree. Run
+     `git worktree add --detach {tmp} HEAD`, apply the staged set there with
+     `git diff --cached --binary | git -C {tmp} apply --index`, run the verification in `{tmp}`, then
+     `git worktree remove --force {tmp}`. Never stash, unstage or restage the caller's files to do
+     this.
 3. **Commit.**
    - If the caller has staged changes, commit exactly the staged set and report what was left
      unstaged. Never unstage.
    - If nothing is staged, commit the ticket's changes: everything on the ticket branch belongs to the
      ticket. Run `git status --short` first, and confirm no unexpected or ignored evidence files would
      go in.
-   - **Complete the plan at the PR**, as `plan-workflow` describes. Development done and going to a
+   - **Complete the plan at the PR**, as `plan-workflow` describes, unless it is already complete.
+     When the plan is already in `planning/completed/` with its `## Status` section, as it is after
+     `ticket-start ship` step 6, leave its Status section, `status:` and `completed:` as they are;
+     add only reminders that are not yet listed. Otherwise development done and going to a
      PR means the plan completes now: append its `## Status` section, set `status: completed` and
      `completed:`, and move it to `planning/completed/`. Each check that can only happen after the PR
      (a deployment, a real run, a sign-off) becomes a `verify` reminder through `reminders-set`,
