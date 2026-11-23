@@ -88,6 +88,10 @@ Print the pre-flight summary and ask user "Proceed? [y/N]".
 
 ### Step 2a: Put the Meta-Plan on the Board
 
+**Moves use `git mv`** when the file is tracked, and plain `mv` when it is not yet tracked
+(`git ls-files --error-unmatch <file>` fails). A meta-plan or slice written moments ago is often
+untracked, and `git mv` refuses it. This applies to every move in this skill.
+
 On the first run, the meta-plan is still `queued` in `planning/`. Starting the review is starting
 the plan, so move it:
 

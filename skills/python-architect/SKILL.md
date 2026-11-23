@@ -194,7 +194,10 @@ The standard does not fix a CI system. It fixes the steps every CI run performs:
 3. Run `uv sync --locked`, which fails if `uv.lock` is out of date with `pyproject.toml`.
 4. Run `uv run ruff check .` and `uv run ruff format --check .`.
 5. Run `uv run pytest`, with JUnit output where the CI system shows test results.
-6. Run `python-project check`, so a drift from the standard fails the build.
+6. Run `python-project check` where the auditor is available, so a drift from the standard fails
+   the build. It ships with this skill set, not with the project, so a CI agent has it only if the
+   repository vendors `python_project.py` or the pipeline fetches it. The generated template does
+   neither; without it, run `check` locally before the PR.
 
 `python-project` ships one implementation: an Azure DevOps template,
 `python-project/scripts/templates/azure-pipelines.python.yml`. It uses `UsePythonVersion@0` for
@@ -203,8 +206,8 @@ the JUnit file.
 
 On GitHub Actions, run the same steps in a workflow: `actions/setup-python` (or
 `astral-sh/setup-uv`) with the version from `requires-python`, then `uv sync --locked`,
-`uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest` and `python-project check`
-as `run:` steps. `new` does not generate a GitHub workflow.
+`uv run ruff check .`, `uv run ruff format --check .` and `uv run pytest` as `run:` steps, plus
+`python-project check` if the auditor is available (step 6). `new` does not generate a GitHub workflow.
 
 ## Applying the standard
 

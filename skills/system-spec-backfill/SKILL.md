@@ -85,10 +85,14 @@ source list.
 specified**. It lists each question for the owner and the plans that raised it. The owner answers
 each one, and the section is deleted before the spec is accepted.
 
-**Status** comes from the plan's column:
+**Status** comes from the plan's column and from evidence that it reached production:
 
-- A feature from a completed plan is `Shipped`.
-- Where the plan delivered a reduced form, the status is `Shipped interim`, and the feature needs
+- A plan completes when its work goes to a PR, before the merge and any deployment (`plan-workflow`),
+  so a completed plan alone is not evidence that its feature is in production. A feature from a
+  completed plan is `Shipped` when its PR is merged to the default branch and its `verify`
+  reminders, if any, are closed, or when the owner confirms it is live. Otherwise give it the release
+  it targets, or `Next up`, and add the question to **Open questions**.
+- Where the plan delivered a reduced form, the status is `Shipped interim` on the same evidence, and the feature needs
   an interim block (`system-spec`). Fill the block from what the plan says it omitted. If the plan
   doesn't give a change kind or a retire-when, add the question to **Open questions**.
 - A feature that only plans in flight touch gets the release they target, or `Next up`.
