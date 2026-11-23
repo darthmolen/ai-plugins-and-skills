@@ -38,7 +38,7 @@ same change: one lifecycle for both, with the prefix carrying the kind.
 
 ```yaml
 ---
-kind: plan            # plan | stub | reminder | review | wave | context
+kind: plan            # plan | stub | reminder | review | wave | context | slice | synthesis
 status: completed     # from kind's vocabulary, below
 track: main           # required in in-progress/, for a plan or a stub
 date: 2026-09-04      # authored, or discovered for a stub
@@ -47,7 +47,7 @@ decided_by: A Name    # optional; who made the call
 decided_on: 2026-09-05 # optional; when
 delivers: [pricing-engine-spec#rule-flows]  # optional; spec features this plan delivers
 author: Claude Code with A Name  # optional; who wrote it
-tier: high            # optional; low | medium | high, from spec-tier
+tier: high            # optional; low | medium | high, from plan-tier
 repo: Example.Orders.Api  # optional; where the code it changes lives, when not this repo
 wave: wave-1          # required on a wave-<n>_ plan and must match it; optional otherwise
 ---
@@ -79,7 +79,15 @@ per kind. Forcing a reminder into the board enum would be a lie about what a rem
 |---|---|
 | `plan`, `stub` | `backlog` · `queued` · `in-progress` · `completed` · `not-implemented` · `blocked` |
 | `reminder` | `open` · `done` · `dropped` |
-| `review`, `wave`, `context` | `open` · `done` |
+| `review`, `wave`, `context`, `synthesis` | `open` · `done` |
+| `slice` | `queued` · `reviewing` · `failed` · `reviewed` · `triaging` · `completed` |
+
+`slice` and `synthesis` are the code-review pipeline's documents under `planning/code-reviews/`,
+which join the same frontmatter contract as plans.
+A slice has more states than a review because its reviewer can fail and a developer triages it in
+place. Both always carry `initiative:` and `parent_plan:` (`MISSING-FIELD` otherwise), because a
+slice without its initiative and its meta-plan cannot be grouped, synthesised or closed. The
+meta-plan itself is an ordinary `kind: plan` with `type: code-review-plan`.
 
 **A stub is a baby plan**, so it
 shares the plan's vocabulary and its directories. Nothing is illegal for a stub: if someone works
@@ -148,12 +156,23 @@ completed, and nothing ever asked for that second edit.
 |---|---|
 | `promoted_to` | a `plan` |
 | `promoted_from` | a `stub` **or** a `plan` — an item is promoted out of whatever held it, sometimes another plan's *Anticipated Backlog* section |
-| `superseded_by`, `folded_into` | a `plan` |
+| `superseded_by`, `folded_into` | a `plan`. On a synthesis, `superseded_by` is the **synthesis** that replaced it, and only that |
 | `plan` (on a reminder) | a `plan` or a `stub` — a reminder outlives the promotion of whatever raised it |
 | `reviews` (on a review) | the `plan` or `stub` the review copy was made from |
+| `parent_plan` | a `plan`: the plan this document answers to. On a wave's lead it is the project plan, on a track it is the lead (`wave-workflow`), and on a code-review slice or synthesis it is the meta-plan. Optional on a plan, required on a slice or synthesis. A loop is `PARENT-CYCLE` |
+| `plan_docs` (on a slice) | a **list** of names, each a `plan` or `stub` the slice implements. Each entry is checked on its own |
 
 **A reference resolving to zero or to more than one document is an error**, naming every
 candidate. Globbing without that check would trade a stale-path bug for a silent wrong-target bug.
+
+**The rule covers the body too.** A markdown link in prose whose target is a file such as
+`wave-1_lead_2026-10-26.md` is a stored path like any other, and it breaks on the same move. In an open document (`plan`/`stub` not yet completed or not-implemented, or an open wave,
+context or reminder), `validate` reports `BODY-PATH` for any link that resolves to a document under
+`planning/`. Write the name in backticks instead: `` `wave-1_lead_2026-10-26` ``. The generated sign
+and wave table carry current paths. Links outside `planning/` (a spec under `docs/specs/`) and
+links into `planning/waves/` are fine. A wave document and the waves context never move, so a link
+to one, including a `#section` anchor, never goes stale. **A document then changes only when its own status does.** Completed documents keep
+their links, because rewriting history would falsify it.
 
 Two documents can share a name: a stub promoted the same day it was filed shares slug *and* date
 with the plan it became. Their *filenames* differ (`stub_` versus `feature_`) but their **names**
@@ -179,6 +198,12 @@ itself. **Redundancy that is checked is a second opinion, not drift.**
 | `review/done` | `planning/needs-review/completed/` |
 | `wave` | `planning/waves/`, or one folder below it (`planning/waves/<wave>/`) |
 | `context` | `planning/waves/` |
+| `slice/queued` | `planning/code-reviews/needs-review/` |
+| `slice/reviewing`, `slice/failed` | `planning/code-reviews/needs-review/in-progress/` |
+| `slice/reviewed`, `slice/triaging` | `planning/code-reviews/needs-review/reviewed/` |
+| `slice/completed` | `planning/code-reviews/needs-review/completed/` |
+| `synthesis/open` | `planning/code-reviews/` |
+| `synthesis/done` | `planning/code-reviews/needs-review/completed/`, beside the slices it summarised |
 
 **A closed reminder has two homes on purpose.** Closing and filing are two acts: a tool closes a
 reminder in place, and a person files it afterwards. Demanding the move at close time would fail
@@ -253,6 +278,41 @@ a heading anchor is `DELIVERS-SHAPE`. The field is optional; a plan that touches
 (`DELIVERS-STILL-RELEASE`). The spec side of the contract (`kind: spec`, its frontmatter, feature
 lines and the generated status table) belongs to the `system-spec` skill. Specs live beside the
 code, not under `planning/`, so `kind: spec` is not a planning kind.
+
+## The `## Feature-spec` section
+
+A plan that changes behaviour carries its piece of the spec in a `## Feature-spec` section
+(the spec format itself is `system-spec`'s).
+When the plan completes, each block merges into the system spec. A plan that changes no behaviour
+leaves the section out.
+
+Each block is a level-3 heading that names its target and its merge kind, then the feature text:
+
+```markdown
+## Feature-spec
+
+### pricing-engine-spec#rule-flows · amend
+
+**Why:** rule flows can now branch on a rule set's result, which the current text forbids.
+
+<the feature's text as it should read after the merge>
+
+### pricing-engine-spec#rule-export · add
+
+<the new feature's text, with its feature line>
+```
+
+| Merge kind | Use when | The block carries |
+|---|---|---|
+| `agree` | The plan builds the feature as the system spec already describes it | The target only; the text may be omitted |
+| `amend` | The plan changes what the feature does | A `**Why:**` line, then the full text as it should read after the merge |
+| `add` | The feature is new | The full text, with the feature line. The slug in the heading is the slug the new feature takes |
+
+The target is written like a `delivers:` entry, as `<spec name>#<feature slug>`, and is a name, not
+a path. Where the area has no system spec yet, write the spec name the area will use, and say in the
+Status block that there was no spec to merge into. `system-spec-backfill` picks those plans up.
+
+The validator does not check this section yet. Until it does, the plan review checks it.
 
 ## Worked examples
 
@@ -329,6 +389,36 @@ audience: dm
 subject: session
 date: 2026-09-01
 plan: area-2-scribes-rite-and-sandbox_2026-08-28
+---
+```
+
+A code-review slice, reviewed and waiting for triage, in
+`planning/code-reviews/needs-review/reviewed/` as `2026-11-04-code-review-state-machine-slice-01-foundation.md`:
+
+```yaml
+---
+kind: slice
+status: reviewed
+date: 2026-11-04
+initiative: state-machine
+parent_plan: code-review-state-machine_2026-11-04
+plan_docs: [state-machine-foundation_2026-10-20]
+slice: 01
+base_sha: 4a2469d…
+head_sha: 1f80579…
+---
+```
+
+A synthesis that a later run replaced, filed in `planning/code-reviews/needs-review/completed/`:
+
+```yaml
+---
+kind: synthesis
+status: done
+date: 2026-11-04
+initiative: state-machine
+parent_plan: code-review-state-machine_2026-11-04
+superseded_by: 2026-11-05-code-review-state-machine-synthesis-02
 ---
 ```
 
