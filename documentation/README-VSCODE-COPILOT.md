@@ -10,6 +10,8 @@ See [README.md](../README.md) for the full plugin and skill listing.
 - **GitHub Copilot** extension with agent mode enabled
 - `chat.useAgentSkills` setting enabled (on by default)
 
+The skills' own scripts expect `git`, the .NET 10 SDK, pwsh 7 and, for `python-project`, Python 3.10+ with `uv`. The full list, with what needs each one, is in the [Claude Code prerequisites](README-CLAUDECODE.md#prerequisites).
+
 ## Installation
 
 ### Option A: VS Code Settings (Recommended)
@@ -18,7 +20,7 @@ Point VS Code at the skill directories in your local clone:
 
 ```bash
 # Clone this repository
-git clone <<github-ai-plugins-and-skills-repo>>
+git clone https://github.com/darthmolen/ai-plugins-and-skills.git ai-plugins-and-skills
 ```
 
 You can also configure this in the UI: Ctrl+Shift+P > **Chat: Chat Settings**, then search for `agentSkillsLocations`.
@@ -30,7 +32,6 @@ Or edit your VS Code **user** `settings.json` directly (Ctrl+Shift+P > "Preferen
 ```json
 {
   "chat.agentSkillsLocations": [
-    "C:/path/to/ai-plugins-and-skills/claude-code/plugins/<<name-of-your-plugin>>/skills",
     "C:/path/to/ai-plugins-and-skills/skills"
   ]
 }
@@ -49,7 +50,7 @@ Open Ctrl+Shift+P > **Chat: Chat Settings** > `agentSkillsLocations`, or add to 
 ```json
 {
   "chat.agentSkillsLocations": [
-    "~/.copilot/installed-plugins/_direct/<<name-of-your-plugin>>/skills"
+    "~/.copilot/installed-plugins/_direct/ai-plugins-and-skills/skills"
   ]
 }
 ```
@@ -59,7 +60,7 @@ You can also add a personal skills directory for any custom skills you create:
 ```json
 {
   "chat.agentSkillsLocations": [
-    "~/.copilot/installed-plugins/_direct/<<name-of-your-plugin>>/skills",
+    "~/.copilot/installed-plugins/_direct/ai-plugins-and-skills/skills",
     "~/.copilot/skills"
   ]
 }
@@ -75,7 +76,10 @@ Skills activate automatically in Copilot agent mode when your prompt matches the
 
 | Skill | Activates When |
 |-------|---------------|
-| `csharp-quality-expert` | Writing or reviewing C# code |
+| `csharp-quality-developer` | Writing or reviewing C# code |
+| `python-developer` | Writing Python application code |
+| `plan-tier` | Starting a plan, or deciding how much detail it needs |
+| `session-workflow` | Starting or ending an agent session in a repository other sessions may share |
 | `codebase-mapper` | Mapping a codebase, generating architecture docs |
 | `ace-fca-workflow` | Complex multi-file tasks in large codebases |
 
@@ -105,7 +109,12 @@ copilot plugin update ai-plugins-and-skills
 
 ### No Slash Commands
 
-VS Code Copilot does not have a slash command system equivalent to Claude Code's.
+VS Code Copilot does not have a slash command system equivalent to Claude Code's. The `python-project` command in `commands/` is Claude Code only; ask for the `python-project` skill with `check` or `new` instead.
+
+### No Agents or Hooks
+
+The `wave-lead` and `wave-track` agents and the `wave-session-title` hook are Claude Code only. Start a wave role by invoking `wave-workflow` with `lead` or `track <name>`, and name the session `wave-<n>-lead` or `wave-<n>-<track>` by hand.
+
 ### No Plugin System
 
 VS Code Copilot loads skills individually, not as plugin bundles. There is no marketplace install or plugin management -- skills are discovered from directories.

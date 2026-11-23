@@ -32,7 +32,7 @@ This is also the answer when generation comes out wrong. Fix it at the layer tha
 
 | Wrong thing | Fix here |
 |---|---|
-| A fact | `documentation/` |
+| A fact | the source repo's docs (`docs/` or `documentation/`) |
 | Emphasis, selection, audience, length, order | `course.yaml` |
 | Structure or tone of the rendered output | the generator skill |
 | | **never** `learning/generated/` |
